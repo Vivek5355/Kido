@@ -1,314 +1,218 @@
 import React, { useState, useEffect } from "react";
-import {
-  Container,
-  Typography,
-  Grid,
-  Box,
-  Paper,
-  Card,
-  CardContent,
-  LinearProgress,
-  Button,
-  Avatar,
-  Chip,
-  Stack,
-  Alert,
-} from "@mui/material";
-import {
-  Star,
-  Assignment,
-  Redeem,
-  TrendingUp,
-  EmojiEvents,
-  CheckCircle,
-  ChildCare,
-} from "@mui/icons-material";
+import {  Container, Typography,Grid,Box, Paper,Card,CardContent,Button,Alert,Dialog, DialogTitle,DialogContent,IconButton,CircularProgress,} from "@mui/material";
+import {  Star, Redeem,TrendingUp,EmojiEvents, Add,Close,} from "@mui/icons-material";
 import Confetti from "react-confetti";
 import { useAuth } from "../context/AuthContext";
+import ChildTasks from "../components/child/ChildTasks";
+import AddWishForm from "../components/child/AddWishForm";
+import { API } from "../components/api/axiosInstance";
 
-const ChildDashboard = ({ activeTab, setActiveTab }) => {
-  const { user } = useAuth(); // Get logged-in user data
+const ChildDashboard = ({ activeTab }) => {
+  const { user } = useAuth();
   const [showConfetti, setShowConfetti] = useState(false);
-  const [tasks, setTasks] = useState([]);
   const [wishes, setWishes] = useState([]);
-
+  const [showAddWishForm, setShowAddWishForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const userData = JSON.parse(localStorage.getItem("kiddoUser"));
-
-  // Use actual logged-in child data
   const childData = {
-    id: user?._id || "1",
-    name: user?.name || "Child User",
-    email: user?.email || "",
-    age: user?.age || 8,
-    totalPoints: user?.totalPoints || 150,
-    redeemedPoints: user?.redeemedPoints || 50,
-    level: user?.level || 3,
-    streak: user?.streak || 5,
-    role: "Child", // Always "Child" for child dashboard
+    id: user?._id || userData?._id,
+    name: user?.name || userData?.name || "Child User",
+    email: user?.email || userData?.email || "",
+    age: user?.age || userData?.age || 8,
+    totalPoints: user?.totalPoints || userData?.totalPoints || 150,
+    redeemedPoints: user?.redeemedPoints || userData?.redeemedPoints || 50,
+    level: user?.level || userData?.level || 3,
+    streak: user?.streak || userData?.streak || 5,
+    role: "Child",
   };
-
-  const availablePoints = childData.totalPoints - childData.redeemedPoints;
-
-  // Demo data for tasks and wishes
+  const fetchWishes = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await API.get(`/wishes/child/${childData?._id}`,
+         {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const transformedWishes = response.data.data.map((wish) => ({
+        id: wish._id || wish.id,
+        title: wish.title,
+        description: wish.description,
+        pointsRequired: wish.pointsRequired,
+        status: wish.status || "pending",
+      }));
+      
+      setWishes(transformedWishes);
+    } catch (err) {
+      console.error("Error fetching wishes:", err);
+      if (err.response) {
+        if (err.response.status === 401) {
+          setError("Authentication failed. Please log in again.");
+        } else if (err.response.status === 404) {
+          setError("Wishes endpoint not found. Please check the API URL.");
+        } else {
+          setError(
+            `Server error: ${err.response.status}. Please try again later.`
+          );
+        }
+      } else if (err.request) {
+        setError(
+          "Cannot connect to the server. Please check your connection and try again."
+        );
+      } else {
+        setError("Failed to load wishes. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const demoTasks = [
-      {
-        id: "1",
-        title: "Read for 20 minutes",
-        description: "Read any book of your choice",
-        category: "Reading",
-        points: 15,
-        status: "pending",
-      },
-      {
-        id: "2", 
-        title: "Complete math worksheet",
-        description: "Finish the addition problems",
-        category: "Math",
-        points: 20,
-        status: "pending",
-      },
-    ];
-
-    const demoWishes = [
-      {
-        id: "1",
-        title: "New Art Supplies",
-        description: "Colored pencils and sketchbook",
-        pointsRequired: 75,
-        status: "pending",
-      },
-      {
-        id: "2",
-        title: "Book Series", 
-        description: "Magic Tree House collection",
-        pointsRequired: 120,
-        status: "pending",
-      },
-    ];
-
-    setTasks(demoTasks);
-    setWishes(demoWishes);
-  }, []);
-
-  const handleCompleteTask = (taskId) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId
-          ? { ...task, status: "pending_approval", completedAt: new Date().toISOString() }
-          : task
-      )
-    );
+    if (activeTab === 1) {
+      fetchWishes();
+    }
+  }, [activeTab, childData.id]);
+  const handleWishAdded = (newWish) => {
+    // console.log("New wish added:", newWish);
+    const transformedWish = {
+      id: newWish._id || newWish.id,
+      title: newWish.title,
+      description: newWish.description,
+      pointsRequired: newWish.pointsRequired || 0,
+      status: newWish.status || "pending",
+    };
+    setWishes(prevWishes => [...prevWishes, transformedWish]);
+    setShowAddWishForm(false);
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
   };
-
-  const handleRequestRedemption = (wishId) => {
-    setWishes((prev) =>
-      prev.map((wish) =>
-        wish.id === wishId 
-          ? { ...wish, status: "pending_approval", requestedAt: new Date().toISOString() } 
-          : wish
-      )
-    );
-  };
-
-  const pendingTasks = tasks.filter((task) => task.status === "pending");
-  const completedTasks = tasks.filter((task) =>
-    ["completed", "approved", "pending_approval"].includes(task.status)
-  );
-
-  const getProgressToNextLevel = () => {
-    const pointsForNextLevel = (childData.level + 1) * 50;
-    return Math.min((childData.totalPoints / pointsForNextLevel) * 100, 100);
-  };
-
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {showConfetti && <Confetti />}
-
-      {/* Profile Section with Child Info */}
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          mb: 4, 
-          textAlign: "center", 
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          mb: 4,
+          textAlign: "center",
           bgcolor: "primary.50",
           border: "2px solid",
-          borderColor: "primary.200"
+          borderColor: "primary.200",
         }}
       >
         <Typography variant="h4" gutterBottom color="primary">
-          Welcome back, {userData.name}! 🌟
+          Welcome back, {childData.name}! 🌟
         </Typography>
         <Typography variant="body1" color="text.secondary">
           You're doing amazing! Keep up the great work!
         </Typography>
       </Paper>
-
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: "center", bgcolor: "success.50" }}>
-            <Typography variant="h3" color="success.main">
-              {availablePoints}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Available Points
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: "center", bgcolor: "info.50" }}>
-            <Typography variant="h3" color="info.main">
-              {childData.level}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Current Level
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: "center", bgcolor: "warning.50" }}>
-            <Typography variant="h3" color="warning.main">
-              {childData.streak}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Day Streak
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: "center", bgcolor: "secondary.50" }}>
-            <Typography variant="h3" color="secondary.main">
-              {completedTasks.length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Tasks Done
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Progress Bar */}
-      {/* <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Progress to Level {childData.level + 1}
-        </Typography>
-        <LinearProgress
-          variant="determinate"
-          value={getProgressToNextLevel()}
-          sx={{ 
-            height: 10, 
-            borderRadius: 5, 
-            mb: 2,
-            bgcolor: "grey.200",
-            "& .MuiLinearProgress-bar": {
-              bgcolor: "primary.main"
-            }
-          }}
-        />
-        <Typography variant="body2" color="text.secondary">
-          {Math.max(0, (childData.level + 1) * 50 - childData.totalPoints)} more points to level up!
-        </Typography>
-      </Paper> */}
-
-      {/* Tab Content */}
       {activeTab === 0 && (
         <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Assignment color="primary" />
-            Your Tasks ({pendingTasks.length} pending)
-          </Typography>
-          {pendingTasks.length > 0 ? (
-            <Grid container spacing={3}>
-              {pendingTasks.map((task) => (
-                <Grid item xs={12} md={6} key={task.id}>
-                  <Card sx={{ height: "100%" }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        {task.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" paragraph>
-                        {task.description}
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                        <Chip
-                          icon={<Star />}
-                          label={`${task.points} points`}
-                          color="primary"
-                          size="small"
-                        />
-                        <Button
-                          variant="contained"
-                          startIcon={<CheckCircle />}
-                          onClick={() => handleCompleteTask(task.id)}
-                        >
-                          Mark Complete
-                        </Button>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Alert severity="info">
-              No tasks assigned yet. Ask your parent to add some tasks!
+          <ChildTasks childId={childData.id} />
+        </Box>
+      )}
+      {activeTab === 1 && (
+        <Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 3,
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
+              <Redeem color="secondary" />
+              My Wish List
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              onClick={() => setShowAddWishForm(true)}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                fontWeight: "bold",
+              }}
+            >
+              Add Wish
+            </Button>
+          </Box>
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={fetchWishes}>
+                  Retry
+                </Button>
+              }
+            >
+              {error}
             </Alert>
+          )}
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {wishes.length === 0 ? (
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 4, textAlign: "center" }}>
+                    <Typography variant="h6" color="text.secondary">
+                      No wishes yet! Add your first wish to get started.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<Add />}
+                      onClick={() => setShowAddWishForm(true)}
+                      sx={{ mt: 2 }}
+                    >
+                      Add Your First Wish
+                    </Button>
+                  </Paper>
+                </Grid>
+              ) : (
+                wishes.map((wish) => (
+                  <Grid item xs={12} md={6} key={wish.id}>
+                    <Card sx={{ height: "100%" }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {wish.title}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          paragraph
+                        >
+                          {wish.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))
+              )}
+            </Grid>
           )}
         </Box>
       )}
-
-      {activeTab === 1 && (
-        <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Redeem color="secondary" />
-            My Wish List
-          </Typography>
-          <Grid container spacing={3}>
-            {wishes.map((wish) => (
-              <Grid item xs={12} md={6} key={wish.id}>
-                <Card sx={{ height: "100%" }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {wish.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      {wish.description}
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                      <Chip
-                        icon={<Redeem />}
-                        label={`${wish.pointsRequired} points`}
-                        color="secondary"
-                        size="small"
-                      />
-                      <Button
-                        variant="contained"
-                        color="secondary"
-                        disabled={availablePoints < wish.pointsRequired || wish.status === "pending_approval"}
-                        onClick={() => handleRequestRedemption(wish.id)}
-                      >
-                        {wish.status === "pending_approval"
-                          ? "Waiting for Approval"
-                          : availablePoints >= wish.pointsRequired
-                          ? "Redeem Now"
-                          : `Need ${wish.pointsRequired - availablePoints} more points`}
-                      </Button>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      )}
-
       {activeTab === 2 && (
         <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
             <EmojiEvents color="warning" />
             Your Achievements
           </Typography>
@@ -355,6 +259,28 @@ const ChildDashboard = ({ activeTab, setActiveTab }) => {
           </Grid>
         </Box>
       )}
+      <Dialog
+        open={showAddWishForm}
+        onClose={() => setShowAddWishForm(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          Add New Wish
+          <IconButton onClick={() => setShowAddWishForm(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 3 }}>
+          <AddWishForm childId={childData.id} onWishAdded={handleWishAdded} />
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };

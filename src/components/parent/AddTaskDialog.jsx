@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -82,6 +82,7 @@ const AddTaskDialog = ({
   onUpdate,
   children = [],
   editTask = null,
+  initialChildId = null,
 }) => {
   const isEditMode = !!editTask;
   const [formData, setFormData] = useState({
@@ -97,21 +98,24 @@ const AddTaskDialog = ({
 
   useEffect(() => {
     if (isEditMode && editTask) {
-      console.log("🔄 Edit Mode - Setting form data:", editTask);
-      console.log("Available children:", children);
-      const childExists = children.find(child => child._id === editTask.childId);
-      console.log("Child exists:", childExists);
-      
+      let childId = "";
+      if (editTask.childId) {
+        childId = editTask.childId;
+      } else if (editTask.child && editTask.child._id) {
+        childId = editTask.child._id;
+      }
+
+      const childExists = children.find(child => child._id === childId);
+
       setFormData({
         title: editTask.title || "",
         description: editTask.description || "",
         category: editTask.category || "Other",
         points: editTask.pointsAwarded || editTask.points || 10,
         dueDate: editTask.dueDate ? dayjs(editTask.dueDate).format("YYYY-MM-DD") : "",
-        childId: editTask.childId || "", 
+        childId: childId,
         estimatedDuration: editTask.estimatedDuration || "",
       });
-      
       setErrors({});
     } else {
       setFormData({
@@ -120,15 +124,17 @@ const AddTaskDialog = ({
         category: "Other",
         points: 10,
         dueDate: "",
-        childId: "",
+        childId: initialChildId || "",
         estimatedDuration: "",
       });
       setErrors({});
     }
-  }, [editTask, isEditMode, children]);
+  }, [editTask, isEditMode, children, initialChildId]);
+
   const handleChange = (field) => (event) => {
     const value = event.target.value;
-    console.log(`🔄 Field changed: ${field} = ${value}`);
+    // console.log(`🔄 Field changed: ${field} = ${value}`);
+    
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -146,6 +152,7 @@ const AddTaskDialog = ({
         }));
       }
     }
+
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -184,10 +191,10 @@ const AddTaskDialog = ({
   };
 
   const handleSubmit = async () => {
-    console.log("🚀 Submit form data:", formData);
+    // console.log("🚀 Submit form data:", formData);
     
     if (!validateForm()) {
-      console.log("❌ Form validation failed:", errors);
+      // console.log("❌ Form validation failed:", errors);
       return;
     }
 
@@ -209,9 +216,10 @@ const AddTaskDialog = ({
           childId: formData.childId,
         };
 
-        console.log("📤 Updating task with data:", updateData);
-        const res = await API.put(`/tasks/${editTask._id}`, updateData);
-        console.log("✅ Task updated:", res.data);
+        // console.log("📤 Updating task with data:", updateData);
+        const res = await API.put(`/tasks/${editTask?._id}`, updateData);
+        console.log("✅ Task updated =====>", res.data);
+        
         onUpdate(res.data);
         handleClose();
       } else {
@@ -226,11 +234,30 @@ const AddTaskDialog = ({
           childId: formData.childId,
         };
 
-        console.log("📤 Creating task with data:", createData);
         const res = await API.post("/tasks", createData);
-        console.log("✅ Task created:", res.data);
-        onAdd(res.data);
-        handleClose();
+        
+        console.log("✅ Full API Response =====>", res);
+        
+        let taskData = res.data;
+        
+        if (res.data && res.data.data) {
+          taskData = res.data.data;
+        }
+        else if (res.data && res.data.task) {
+          taskData = res.data.task;
+        }
+        
+        
+        if (taskData && taskData._id) {
+          onAdd(taskData);
+          handleClose();
+          
+        } else {
+          console.error("❌ No valid task data in response - triggering refresh");
+          
+          onAdd(null);
+          handleClose();
+        }
       }
     } catch (error) {
       console.error("❌ Error saving task:", error.response?.data || error.message);
@@ -252,18 +279,16 @@ const AddTaskDialog = ({
     onClose();
   };
 
-  // Debug logging
-  console.log("🐛 Debug Info:");
-  console.log("- isEditMode:", isEditMode);
-  console.log("- editTask:", editTask);
-  console.log("- children:", children);
-  console.log("- formData.childId:", formData.childId);
-  console.log("- errors:", errors);
+  
 
   const selectedChild = children.find((child) => child._id === formData.childId);
 
+  if (formData.childId && !selectedChild) {
+    console.warn("⚠️ ChildId not found in children array:", formData.childId);
+  }
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         {isEditMode ? <Edit /> : <Assignment />}
         {isEditMode ? "Edit Task" : "Create New Task"}
@@ -280,7 +305,7 @@ const AddTaskDialog = ({
                 {PRESET_TASKS.map((preset, index) => (
                   <Chip
                     key={index}
-                    label={`${preset.title} (${preset.points} pts)`}
+                    label={preset.title}
                     onClick={() => handlePresetTask(preset)}
                     clickable
                     size="small"
@@ -291,26 +316,7 @@ const AddTaskDialog = ({
             </Box>
           )}
 
-          <TextField
-            label="Task Title"
-            value={formData.title}
-            onChange={handleChange("title")}
-            error={!!errors.title}
-            helperText={errors.title}
-            fullWidth
-            required
-          />
-
-          <TextField
-            label="Description (Optional)"
-            value={formData.description}
-            onChange={handleChange("description")}
-            fullWidth
-            multiline
-            rows={2}
-          />
-
-          <FormControl fullWidth error={!!errors.childId} required>
+          <FormControl fullWidth error={!!errors.childId}>
             <InputLabel>Assign to Child</InputLabel>
             <Select
               value={formData.childId}
@@ -320,7 +326,7 @@ const AddTaskDialog = ({
               {children.map((child) => (
                 <MenuItem key={child._id} value={child._id}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Avatar sx={{ width: 24, height: 24, fontSize: "0.75rem" }}>
+                    <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
                       {child.name.charAt(0)}
                     </Avatar>
                     {child.name} (Level {Math.floor((child.totalPoints || 0) / 50) + 1})
@@ -329,11 +335,29 @@ const AddTaskDialog = ({
               ))}
             </Select>
             {errors.childId && (
-              <Typography color="error" variant="caption" sx={{ mt: 0.5 }}>
+              <Typography variant="caption" color="error">
                 {errors.childId}
               </Typography>
             )}
           </FormControl>
+
+          <TextField
+            label="Task Title"
+            value={formData.title}
+            onChange={handleChange("title")}
+            error={!!errors.title}
+            helperText={errors.title}
+            fullWidth
+          />
+
+          <TextField
+            label="Description (optional)"
+            value={formData.description}
+            onChange={handleChange("description")}
+            multiline
+            rows={2}
+            fullWidth
+          />
 
           <FormControl fullWidth>
             <InputLabel>Category</InputLabel>
@@ -356,13 +380,13 @@ const AddTaskDialog = ({
             value={formData.points}
             onChange={handleChange("points")}
             error={!!errors.points}
-            helperText={errors.points || "Points between 1-100"}
-            inputProps={{ min: 1, max: 100 }}
+            helperText={errors.points}
+            InputProps={{ inputProps: { min: 1, max: 100 } }}
             fullWidth
           />
 
           <TextField
-            label="Due Date (Optional)"
+            label="Due Date (optional)"
             type="date"
             value={formData.dueDate}
             onChange={handleChange("dueDate")}
@@ -371,22 +395,21 @@ const AddTaskDialog = ({
           />
 
           <TextField
-            label="Estimated Duration (Optional)"
+            label="Estimated Duration (optional)"
             value={formData.estimatedDuration}
             onChange={handleChange("estimatedDuration")}
-            placeholder="e.g., 20 min, 1 hour"
+            placeholder="e.g., 30 min, 1 hour"
             fullWidth
           />
 
           {selectedChild && (
-            <Box sx={{ p: 2, bgcolor: "background.paper", borderRadius: 1, border: 1, borderColor: "divider" }}>
+            <Box sx={{ p: 2, bgcolor: "primary.50", borderRadius: 1 }}>
               <Typography variant="subtitle2" gutterBottom>
                 Task Preview:
               </Typography>
               <Typography variant="body2">
                 {selectedChild.name} will earn{" "}
                 <Chip
-                  icon={<Star />}
                   label={`${formData.points} pts`}
                   size="small"
                   color="primary"
@@ -404,8 +427,8 @@ const AddTaskDialog = ({
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
         <Button
-          variant="contained"
           onClick={handleSubmit}
+          variant="contained"
           disabled={!formData.title.trim() || !formData.childId}
         >
           {isEditMode ? "Update Task" : "Create Task"}

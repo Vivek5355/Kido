@@ -1,479 +1,400 @@
-
-
-// import React, { useState, useEffect } from "react";
-// import {
-//   Dialog,
-//   DialogTitle,
-//   DialogContent,
-//   DialogActions,
-//   Button,
-//   TextField,
-//   Box,
-//   Alert,
-// } from "@mui/material";
-// import { API } from "../api/axiosInstance";
-
-// const AddChildDialog = ({ open, onClose, onAdd, onUpdate, editChild }) => {
-//   const [formData, setFormData] = useState({
-//     name: "",
-//     age: "",
-//     interests: "",
-//     email: "",
-//     password: "",
-//   });
-//   const [errors, setErrors] = useState({});
-//   const [loading, setLoading] = useState(false);
-//   const [serverError, setServerError] = useState("");
-
-//   /* ----------------------------------------------------------
-//      Reset form every time the dialog opens
-//   ---------------------------------------------------------- */
-//   useEffect(() => {
-//     if (open) {
-//       setServerError("");
-//       if (editChild) {
-//         setFormData({
-//           name: editChild.name || "",
-//           age: editChild.age || "",
-//           interests: editChild.interests?.join(", ") || "",
-//           email: "",           // <- not used in edit mode
-//           password: "",        // <- not used in edit mode
-//         });
-//       } else {
-//         setFormData({
-//           name: "",
-//           age: "",
-//           interests: "",
-//           email: "",
-//           password: "",
-//         });
-//       }
-//     }
-//   }, [editChild, open]);
-
-//   /* ----------------------------------------------------------
-//      Validation
-//   ---------------------------------------------------------- */
-//   const validateForm = () => {
-//     let newErrors = {};
-
-//     if (!formData.name.trim()) newErrors.name = "Name is required";
-
-//     if (!formData.age) {
-//       newErrors.age = "Age is required";
-//     } else if (isNaN(formData.age) || formData.age <= 0 || formData.age > 18) {
-//       newErrors.age = "Enter a valid age (1-18)";
-//     }
-
-//     if (!formData.interests.trim())
-//       newErrors.interests = "Interests are required";
-
-//     // Validate email/password only when creating
-//     if (!editChild) {
-//       if (!formData.email.trim()) newErrors.email = "Email is required";
-//       else if (!/\S+@\S+\.\S+/.test(formData.email))
-//         newErrors.email = "Email is invalid";
-
-//       if (!formData.password) newErrors.password = "Password is required";
-//       else if (formData.password.length < 6)
-//         newErrors.password = "Password must be at least 6 characters";
-//     }
-
-//     setErrors(newErrors);
-//     return Object.keys(newErrors).length === 0;
-//   };
-
-//   /* ----------------------------------------------------------
-//      Field change handler
-//   ---------------------------------------------------------- */
-//   const handleChange = (e) => {
-//     setFormData({ ...formData, [e.target.name]: e.target.value });
-//     if (errors[e.target.name]) {
-//       setErrors({ ...errors, [e.target.name]: "" });
-//     }
-//     if (serverError) setServerError("");
-//   };
-
-//   /* ----------------------------------------------------------
-//      Submit handler
-//   ---------------------------------------------------------- */
-//   const handleSubmit = async () => {
-//     if (!validateForm()) return;
-
-//     setLoading(true);
-//     setServerError("");
-
-//     const payload = {
-//       name: formData.name.trim(),
-//       age: parseInt(formData.age, 10),
-//       interests: formData.interests
-//         .split(",")
-//         .map((i) => i.trim())
-//         .filter((i) => i.length > 0),
-//     };
-
-//     // Only attach email/password when creating
-//     if (!editChild) {
-//       payload.email = formData.email.trim();
-//       payload.password = formData.password;
-//     }
-
-//     try {
-//       let response;
-//       if (editChild) {
-//         // EDIT MODE
-//         response = await API.put(`/children/${editChild._id}`, payload);
-//         onUpdate(response.data);
-//       } else {
-//         // CREATE MODE
-//         response = await API.post("/children", payload);
-//         onAdd(response.data);
-//       }
-//       onClose();
-//     } catch (err) {
-//       const errorMessage =
-//         err.response?.data?.message ||
-//         err.response?.data?.error ||
-//         "Failed to save child. Please try again.";
-//       setServerError(errorMessage);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   /* ----------------------------------------------------------
-//      Render
-//   ---------------------------------------------------------- */
-//   return (
-//     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-//       <DialogTitle>{editChild ? "Edit Child" : "Add New Child"}</DialogTitle>
-//       <DialogContent>
-//         <Box display="flex" flexDirection="column" gap={2} mt={1}>
-//           {serverError && (
-//             <Alert severity="error" sx={{ mb: 2 }}>
-//               {serverError}
-//             </Alert>
-//           )}
-
-//           <TextField
-//             label="Name"
-//             name="name"
-//             value={formData.name}
-//             onChange={handleChange}
-//             error={!!errors.name}
-//             helperText={errors.name}
-//             disabled={loading}
-//             fullWidth
-//           />
-//           <TextField
-//             label="Age"
-//             name="age"
-//             type="number"
-//             value={formData.age}
-//             onChange={handleChange}
-//             error={!!errors.age}
-//             helperText={errors.age}
-//             disabled={loading}
-//             fullWidth
-//             inputProps={{ min: 1, max: 18 }}
-//           />
-//           <TextField
-//             label="Interests (comma separated)"
-//             name="interests"
-//             value={formData.interests}
-//             onChange={handleChange}
-//             error={!!errors.interests}
-//             helperText={errors.interests || "e.g. Reading, Sports, Music"}
-//             disabled={loading}
-//             fullWidth
-//           />
-
-//           {/* Only show email/password when creating */}
-//           {!editChild && (
-//             <>
-//               <TextField
-//                 label="Email"
-//                 name="email"
-//                 type="email"
-//                 value={formData.email}
-//                 onChange={handleChange}
-//                 error={!!errors.email}
-//                 helperText={errors.email}
-//                 disabled={loading}
-//                 fullWidth
-//               />
-//               <TextField
-//                 label="Password"
-//                 name="password"
-//                 type="password"
-//                 value={formData.password}
-//                 onChange={handleChange}
-//                 error={!!errors.password}
-//                 helperText={errors.password}
-//                 disabled={loading}
-//                 fullWidth
-//               />
-//             </>
-//           )}
-//         </Box>
-//       </DialogContent>
-//       <DialogActions>
-//         <Button onClick={onClose} color="secondary" disabled={loading}>
-//           Cancel
-//         </Button>
-//         <Button
-//           onClick={handleSubmit}
-//           variant="contained"
-//           color="primary"
-//           disabled={loading}
-//         >
-//           {loading ? "Saving..." : editChild ? "Update" : "Add"}
-//         </Button>
-//       </DialogActions>
-//     </Dialog>
-//   );
-// };
-
-// export default AddChildDialog;
-
-
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   TextField,
+  Button,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
   Box,
-  Alert,
+  Avatar,
+  Chip,
 } from "@mui/material";
+import { Assignment, Star, Edit } from "@mui/icons-material";
+import dayjs from "dayjs";
 import { API } from "../api/axiosInstance";
 
-const AddChildDialog = ({ open, onClose, onAdd, onUpdate, editChild }) => {
+const TASK_CATEGORIES = [
+  { name: "Reading", points: 15, color: "primary" },
+  { name: "Math", points: 20, color: "secondary" },
+  { name: "Chores", points: 10, color: "success" },
+  { name: "Exercise", points: 25, color: "warning" },
+  { name: "Creative", points: 15, color: "info" },
+  { name: "Social", points: 12, color: "error" },
+  { name: "Other", points: 10, color: "default" },
+];
+const PRESET_TASKS = [
+  {
+    title: "Read for 20 minutes",
+    category: "Reading",
+    points: 15,
+    duration: "20 min",
+  },
+  {
+    title: "Complete math worksheet",
+    category: "Math",
+    points: 20,
+    duration: "30 min",
+  },
+  {
+    title: "Tidy up bedroom",
+    category: "Chores",
+    points: 10,
+    duration: "15 min",
+  },
+  {
+    title: "Exercise for 30 minutes",
+    category: "Exercise",
+    points: 25,
+    duration: "30 min",
+  },
+  {
+    title: "Practice piano",
+    category: "Creative",
+    points: 15,
+    duration: "20 min",
+  },
+  {
+    title: "Help with dinner prep",
+    category: "Chores",
+    points: 20,
+    duration: "25 min",
+  },
+  {
+    title: "Write in journal",
+    category: "Creative",
+    points: 12,
+    duration: "15 min",
+  },
+];
+
+const AddTaskDialog = ({
+  open,
+  onClose,
+  onAdd,
+  onUpdate,
+  children = [],
+  editTask = null,
+  initialChildId = null,
+}) => {
+  const isEditMode = !!editTask;
   const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    interests: "",
-    email: "",
-    password: "",
+    title: "",
+    description: "",
+    category: "Other",
+    points: 10,
+    dueDate: "",
+    childId: "",
+    estimatedDuration: "",
+    type: 1
   });
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState("");
-
   useEffect(() => {
-    if (open) {
-      setServerError("");
+    if (isEditMode && editTask) {
+      let childId = "";
+      if (editTask.childId) {
+        childId = editTask.childId;
+      } else if (editTask.child && editTask.child._id) {
+        childId = editTask.child._id;
+      }
+      // console.log("Extracted childId:", childId);
+      // const childExists = children.find(child => child._id === childId);
+      // console.log("Child exists:", childExists);
+      setFormData({
+        title: editTask.title || "",
+        description: editTask.description || "",
+        category: editTask.category || "Other",
+        points: editTask.pointsAwarded || editTask.points || 10,
+        dueDate: editTask.dueDate ? dayjs(editTask.dueDate).format("YYYY-MM-DD") : "",
+        childId: childId,
+        estimatedDuration: editTask.estimatedDuration || "",
+        type:1
+      });
       setErrors({});
-      if (editChild) {
-        setFormData({
-          name: editChild.name || "",
-          age: editChild.age || "",
-          interests: editChild.interests?.join(", ") || "",
-          email: editChild.email || "", // Include email for editing
-          password: "", // Keep password empty for editing
-        });
-      } else {
-        setFormData({
-          name: "",
-          age: "",
-          interests: "",
-          email: "",
-          password: "",
-        });
+    } else {
+      setFormData({
+        title: "",
+        description: "",
+        category: "Other",
+        points: 10,
+        dueDate: "",
+        childId: initialChildId || "",
+        estimatedDuration: "",
+        type:1
+      });
+      setErrors({});
+    }
+  }, [editTask, isEditMode, initialChildId]); 
+  const handleChange = (field) => (event) => {
+    const value = event.target.value;
+    // console.log(`ðŸ”„ Field changed: ${field} = ${value}`);
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    if (field === "category") {
+      const categoryData = TASK_CATEGORIES.find(
+        (cat) => cat.name === value
+      );
+      if (categoryData) {
+        setFormData((prev) => ({
+          ...prev,
+          points: categoryData.points,
+          [field]: value,
+        }));
       }
     }
-  }, [editChild, open]);
-
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }));
+    }
+  };
+  const handlePresetTask = (preset) => {
+    setFormData((prev) => ({
+      ...prev,
+      title: preset.title,
+      category: preset.category,
+      points: preset.points,
+      estimatedDuration: preset.duration,
+    }));
+  };
   const validateForm = () => {
-    let newErrors = {};
-
-    if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.age) {
-      newErrors.age = "Age is required";
-    } else if (isNaN(formData.age) || formData.age <= 0 || formData.age > 18) {
-      newErrors.age = "Enter a valid age (1-18)";
+    const newErrors = {};
+    if (!formData.title.trim()) {
+      newErrors.title = "Task title is required";
     }
-    if (!formData.interests.trim())
-      newErrors.interests = "Interests are required";
-
-    // Always validate email
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
+    if (!formData.childId) {
+      newErrors.childId = "Please select a child";
     }
-
-    // Only validate password for new children
-    if (!editChild) {
-      if (!formData.password) newErrors.password = "Password is required";
-      else if (formData.password.length < 6)
-        newErrors.password = "Password must be at least 6 characters";
+    if (formData.points < 1 || formData.points > 100) {
+      newErrors.points = "Points must be between 1 and 100";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: "" });
-    }
-    if (serverError) setServerError("");
-  };
-
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setServerError("");
-
+    // console.log("ðŸš€ Submit form data:", formData);
+    if (!validateForm()) {
+      // console.log("âŒ Form validation failed:", errors);
+      return;
+    }
     try {
-      const payload = {
-        name: formData.name.trim(),
-        age: parseInt(formData.age, 10),
-        interests: formData.interests
-          .split(",")
-          .map((i) => i.trim())
-          .filter((i) => i.length > 0),
-        email: formData.email.trim(), 
-      };
-
-      if (formData.password) {
-        payload.password = formData.password;
-      }
-
-      console.log("Sending payload:", payload);
-
-      let response;
-      if (editChild) {
-        response = await API.put(`/children/${editChild._id}`, payload);
-        onUpdate(response.data);
+      if (isEditMode) {
+        if (editTask.status === "complete") {
+          alert("Completed tasks cannot be edited.");
+          return;
+        }
+        const updateData = {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          pointsAwarded: formData.points,
+          dueDate: formData.dueDate,
+          estimatedDuration: formData.estimatedDuration,
+          status: editTask.status || "pending_approval",
+          childId: formData.childId,
+        };
+        // console.log("ðŸ“¤ Updating task with data:", updateData);
+        const res = await API.put(`/tasks/${editTask?._id}`, updateData);
+        // console.log("âœ… Task updated:", res.data);
+        onUpdate(res.data);
+        handleClose();
       } else {
-        response = await API.post("/children", payload);
-        onAdd(response.data);
+        const createData = {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          pointsAwarded: formData.points,
+          dueDate: formData.dueDate,
+          estimatedDuration: formData.estimatedDuration,
+          status: "pending_approval",
+          childId: formData.childId,
+        };
+        // console.log("ðŸ“¤ Creating task with data:", createData);
+        const res = await API.post("/tasks", createData);
+        // console.log("âœ… Task created:", res.data);
+        onAdd(res.data);
+        handleClose();
       }
-      onClose();
-    } catch (err) {
-      console.error("Save failed:", err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Failed to save child. Please try again.";
-      setServerError(errorMessage);
-      
-      // More detailed error logging
-      if (err.response) {
-        console.error("Server response:", err.response);
-        console.error("Response data:", err.response.data);
-        console.error("Response status:", err.response.status);
-      }
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("âŒ Error saving task:", error.response?.data || error.message);
+      alert(error.response?.data?.message || "Something went wrong");
     }
   };
-
+  const handleClose = () => {
+    setFormData({
+      title: "",
+      description: "",
+      category: "Other",
+      points: 10,
+      dueDate: "",
+      childId: "",
+      estimatedDuration: "",
+    });
+    setErrors({});
+    onClose();
+  };
+  const selectedChild = children.find((child) => child._id === formData.childId);
+  // console.log("- selectedChild:", selectedChild);
+  if (formData.childId && !selectedChild) {
+    console.warn("âš ï¸ ChildId not found in children array:", formData.childId);
+  }
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{editChild ? "Edit Child" : "Add New Child"}</DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
+          {isEditMode ? <Edit /> : <Assignment />}
+          {isEditMode ? "Edit Task" : "Create New Task"}
+        </Box>
+      </DialogTitle>
       <DialogContent>
-        <Box display="flex" flexDirection="column" gap={2} mt={1}>
-          {serverError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {serverError}
-            </Alert>
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          {!isEditMode && (
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Quick Task Templates:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                {PRESET_TASKS.map((preset, index) => (
+                  <Chip
+                    key={index}
+                    label={`${preset.title} (${preset.points}pts)`}
+                    onClick={() => handlePresetTask(preset)}
+                    clickable
+                    size="small"
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+            </Box>
           )}
+          <TextField
+            fullWidth
+            label="Task Title"
+            value={formData.title}
+            onChange={handleChange("title")}
+            error={!!errors.title}
+            helperText={errors.title}
+            placeholder="e.g., Read for 20 minutes"
+          />
+
+          <FormControl fullWidth error={!!errors.childId}>
+            <InputLabel>Assign to Child</InputLabel>
+            <Select
+              value={formData.childId}
+              onChange={handleChange("childId")}
+              label="Assign to Child"
+            >
+              {children.map((child) => (
+                <MenuItem key={child._id} value={child._id}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Avatar sx={{ width: 24, height: 24, fontSize: "0.75rem" }}>
+                      {child.name.charAt(0)}
+                    </Avatar>
+                    {child.name} (Level {Math.floor((child.totalPoints || 0) / 50) + 1})
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+            {errors.childId && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                {errors.childId}
+              </Typography>
+            )}
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={formData.category}
+              onChange={handleChange("category")}
+              label="Category"
+            >
+              {TASK_CATEGORIES.map((category) => (
+                <MenuItem key={category.name} value={category.name}>
+                  {category.name} (Recommended: {category.points} pts)
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <TextField
-            label="Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
-            disabled={loading}
             fullWidth
-          />
-          <TextField
-            label="Age"
-            name="age"
+            label="Points"
             type="number"
-            value={formData.age}
-            onChange={handleChange}
-            error={!!errors.age}
-            helperText={errors.age}
-            disabled={loading}
-            fullWidth
-            inputProps={{ min: 1, max: 18 }}
+            value={formData.points}
+            onChange={handleChange("points")}
+            error={!!errors.points}
+            helperText={errors.points}
+            inputProps={{ min: 1, max: 100 }}
           />
+
           <TextField
-            label="Interests (comma separated)"
-            name="interests"
-            value={formData.interests}
-            onChange={handleChange}
-            error={!!errors.interests}
-            helperText={errors.interests || "e.g. Reading, Sports, Music"}
-            disabled={loading}
             fullWidth
+            label="Description (optional)"
+            multiline
+            rows={3}
+            value={formData.description}
+            onChange={handleChange("description")}
+            placeholder="Additional details about the task..."
           />
-          
-          {/* Always show email field */}
+
           <TextField
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            error={!!errors.email}
-            helperText={errors.email}
-            disabled={loading}
             fullWidth
+            label="Due Date (optional)"
+            type="date"
+            value={formData.dueDate}
+            onChange={handleChange("dueDate")}
+            InputLabelProps={{ shrink: true }}
           />
-          
-          {/* Show password field for new children or as optional for editing */}
-          {!editChild ? (
-            <TextField
-              label="Password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              disabled={loading}
-              fullWidth
-            />
-          ) : (
-            <TextField
-              label="New Password (leave blank to keep current)"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              helperText="Enter a new password only if you want to change it"
-              disabled={loading}
-              fullWidth
-            />
+
+          <TextField
+            fullWidth
+            label="Estimated Duration (optional)"
+            value={formData.estimatedDuration}
+            onChange={handleChange("estimatedDuration")}
+            placeholder="e.g., 20 min, 1 hour"
+          />
+
+          {selectedChild && (
+            <Box sx={{ p: 2, bgcolor: "primary.50", borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Task Preview:
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedChild.name} will earn{" "}
+                <Chip
+                  icon={<Star />}
+                  label={`${formData.points} pts`}
+                  size="small"
+                  color="primary"
+                />{" "}
+                for completing: {formData.title || "this task"}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Note: Task will appear in Approvals tab for immediate approval/rejection
+              </Typography>
+            </Box>
           )}
-        </Box>
+        </Stack>
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={onClose} color="secondary" disabled={loading}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-          disabled={loading}
-        >
-          {loading ? "Saving..." : editChild ? "Update" : "Add"}
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSubmit}>
+          {isEditMode ? "Update Task" : "Create Task"}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-
-export default AddChildDialog;
+export default AddTaskDialog;

@@ -1,113 +1,68 @@
-import React, { useState } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardActions,
-  Avatar,
-  Typography,
-  Button,
-  Chip,
-  Stack,
-  IconButton,
-  Menu,
-  MenuItem,
-  Box,
-  CardMedia,
-} from '@mui/material';
-import {
-  MoreVert,
-  Edit,
-  Delete,
-  Redeem,
-  Star,
-  CheckCircle,
-  Cancel,
-} from '@mui/icons-material';
+import React, { useState } from "react";
+import {Card,CardHeader,CardContent,CardActions,Avatar,Typography,IconButton,Stack,Tooltip,Chip,Box,} from "@mui/material";
+import { MoreVert, AddTask, Redeem, CheckCircle, Cancel, Star } from "@mui/icons-material";
+import CreateTaskForm from "./CreateTaskForm";
 
-const WishCard = ({ 
-  wish, 
-  child, 
-  onEdit, 
-  onDelete, 
-  onApprove, 
-  onReject, 
-  onRequestRedemption, 
-  userRole 
+const WishCard = ({
+  wish,
+  child,
+  userRole,
+  onApprove,
+  onReject,
+  onRequestRedemption,
+  childrenList = [],
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-
-  const availablePoints = child ? (child.totalPoints - child.redeemedPoints) : 0;
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const availablePoints = child ? child.totalPoints - child.redeemedPoints : 0;
   const canAfford = availablePoints >= wish.pointsRequired;
-
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'available':
-        return { color: 'primary', label: 'Available', icon: <Star /> };
-      case 'pending_approval':
-        return { color: 'warning', label: 'Pending Approval', icon: <Star /> };
-      case 'redeemed':
-        return { color: 'success', label: 'Redeemed', icon: <CheckCircle /> };
-      case 'rejected':
-        return { color: 'error', label: 'Rejected', icon: <Cancel /> };
+      case "available":
+        return { color: "primary", label: "Available", icon: <Star /> };
+      case "pending_approval":
+        return { color: "warning", label: "Pending Approval", icon: <Star /> };
+      case "redeemed":
+        return { color: "success", label: "Redeemed", icon: <CheckCircle /> };
+      case "rejected":
+        return { color: "error", label: "Rejected", icon: <Cancel /> };
       default:
-        return { color: 'default', label: 'Unknown', icon: <Star /> };
+        return { color: "default", label: "Unknown", icon: <Star /> };
     }
   };
-
   const statusConfig = getStatusConfig(wish.status);
-
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleEdit = () => {
-    onEdit(wish);
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${wish.title}"?`)) {
-      onDelete(wish.id);
-    }
-    handleMenuClose();
+  const getChildName = () => {
+    if (child?.name) return child.name;
+    if (wish.childId?.name) return wish.childId.name;
+    if (wish.childName) return wish.childName;
+    return "Unknown Child";
   };
 
   return (
     <>
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {wish.imageUrl && (
-          <CardMedia
-            component="img"
-            height="140"
-            image={wish.imageUrl}
-            alt={wish.title}
-          />
-        )}
-
+      <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         <CardHeader
           avatar={
-            <Avatar src={child?.profilePicture} sx={{ bgcolor: 'secondary.main' }}>
-              {child?.name?.charAt(0)?.toUpperCase()}
+            <Avatar src={child?.profilePicture} sx={{ bgcolor: "secondary.main" }}>
+              {getChildName().charAt(0).toUpperCase()}
             </Avatar>
           }
           action={
-            <IconButton onClick={handleMenuClick}>
-              <MoreVert />
-            </IconButton>
+            <Stack direction="row" alignItems="center">
+              <Tooltip title="Add Task">
+                <IconButton onClick={() => setTaskDialogOpen(true)}>
+                  <AddTask />
+                </IconButton>
+              </Tooltip>
+              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                <MoreVert />
+              </IconButton>
+            </Stack>
           }
-          title={
-            <Typography variant="h6" fontWeight="bold">
-              {wish.title}
-            </Typography>
-          }
-          subheader={`For: ${child?.name}`}
+          title={<Typography variant="h6">{wish.title}</Typography>}
+          subheader={`For: ${getChildName()}`}
         />
-        
+
         <CardContent sx={{ flexGrow: 1 }}>
           <Stack spacing={2}>
             {wish.description && (
@@ -115,30 +70,17 @@ const WishCard = ({
                 {wish.description}
               </Typography>
             )}
-            
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Chip 
-                label={statusConfig.label}
-                color={statusConfig.color}
-                icon={statusConfig.icon}
-                size="small"
-              />
-              <Chip 
-                label={`${wish.pointsRequired} points`}
-                color="secondary"
-                size="small"
-              />
-              {wish.category && (
-                <Chip 
-                  label={wish.category}
-                  variant="outlined"
-                  size="small"
-                />
-              )}
+            <Stack direction="row" spacing={1}>
+              <Chip label={statusConfig.label} color={statusConfig.color} icon={statusConfig.icon} size="small" />
             </Stack>
-
             {child && (
-              <Box sx={{ p: 1, bgcolor: canAfford ? 'success.50' : 'warning.50', borderRadius: 1 }}>
+              <Box
+                sx={{
+                  p: 1,
+                  bgcolor: canAfford ? "success.50" : "warning.50",
+                  borderRadius: 1,
+                }}
+              >
                 <Typography variant="caption" color="text.secondary">
                   Available Points: {availablePoints} / {wish.pointsRequired}
                 </Typography>
@@ -146,68 +88,33 @@ const WishCard = ({
             )}
           </Stack>
         </CardContent>
-        
+
         <CardActions>
-          {userRole === 'parent' && wish.status === 'pending_approval' && (
+          {userRole === "parent" && wish.status === "pending_approval" && (
             <>
-              <Button 
-                size="small" 
-                startIcon={<CheckCircle />}
-                onClick={() => onApprove(wish.id)}
-                color="success"
-                variant="contained"
-              >
-                Approve
-              </Button>
-              <Button 
-                size="small" 
-                startIcon={<Cancel />}
-                onClick={() => onReject(wish.id)}
-                color="error"
-                variant="outlined"
-              >
-                Reject
-              </Button>
+              <IconButton onClick={() => onApprove(wish._id)} color="success">
+                <CheckCircle />
+              </IconButton>
+              <IconButton onClick={() => onReject(wish._id)} color="error">
+                <Cancel />
+              </IconButton>
             </>
           )}
-
-          {userRole === 'child' && wish.status === 'available' && canAfford && (
-            <Button 
-              size="small" 
-              startIcon={<Redeem />}
-              onClick={() => onRequestRedemption(wish.id)}
-              color="secondary"
-              variant="contained"
-              fullWidth
-            >
-              Request Redemption
-            </Button>
-          )}
-
-          {wish.status === 'redeemed' && (
-            <Chip 
-              label="✅ Redeemed!" 
-              color="success" 
-              size="small"
-            />
+          {userRole === "child" && wish.status === "available" && canAfford && (
+            <IconButton onClick={() => onRequestRedemption(wish._id)} color="secondary">
+              <Redeem />
+            </IconButton>
           )}
         </CardActions>
       </Card>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleEdit}>
-          <Edit sx={{ mr: 1 }} />
-          Edit
-        </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-          <Delete sx={{ mr: 1 }} />
-          Delete
-        </MenuItem>
-      </Menu>
+      <CreateTaskForm
+        open={taskDialogOpen}
+        onClose={() => setTaskDialogOpen(false)}
+        wish={wish} 
+        childrenList={childrenList}
+        onTaskCreated={(task) => console.log("âœ… Task Created:", task)}
+      />
     </>
   );
 };

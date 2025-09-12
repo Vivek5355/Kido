@@ -72,7 +72,7 @@ const Register = () => {
           role: "parent",
         });
 
-        console.log("✅ Registration success:", res.data);
+        // console.log("✅ Registration success:", res.data);
         localStorage.setItem("token", res.data.token);
         login(res.data, "parent");
         navigate("/dashboard");

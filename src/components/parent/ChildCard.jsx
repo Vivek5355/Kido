@@ -33,6 +33,7 @@ const ChildCard = ({ child, onEdit, onDelete, onViewTasks, onViewWishes }) => {
   };
 
   const handleEdit = () => {
+    
     onEdit(child);
     handleMenuClose();
   };
@@ -72,15 +73,6 @@ const ChildCard = ({ child, onEdit, onDelete, onViewTasks, onViewWishes }) => {
         
         <CardContent sx={{ flexGrow: 1 }}>
           <Stack spacing={2}>
-            <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Interests:
-              </Typography>
-              <Typography variant="body2">
-                {child?.interests?.length > 0 ? child.interests.join(', ') : 'None specified'}
-              </Typography>
-            </Box>
-            
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Chip 
                 label={`${availablePoints} points`} 

@@ -13,9 +13,7 @@ import WishCard from "./WishCard";
 
 const ParentWishes = ({ wishes, children, onApprove, onReject, onAddTask }) => {
   const [selectedChildId, setSelectedChildId] = useState("");
-
   const getChildById = (id) => children.find((c) => c._id === id);
-
   const filteredWishes = selectedChildId
     ? wishes.filter(
         (w) =>

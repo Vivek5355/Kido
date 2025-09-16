@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -6,268 +6,168 @@ import {
   DialogActions,
   TextField,
   Button,
-  Box,
-  Avatar,
-  Typography,
-  InputAdornment,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import { Visibility, VisibilityOff, PersonAdd } from '@mui/icons-material';
+  Alert,
+  CircularProgress,
+  Stack,
+} from "@mui/material";
+import { API } from "../api/axiosInstance";
 
-const AddChildDialog = ({
-  open,
-  onClose,
-  onAdd,
-  onUpdate,
-  editChild = null,
-}) => {
+const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    age: '',
-    password: '',
-    gender: '',
+    name: "",
+    email: "",
+    age: "",
+    password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({ type: "", message: "" });
 
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (editChild) {
       setFormData({
-        name: editChild.name || '',
-        email: editChild.email || '',
-        age: editChild.age || '',
-        password: '',
-        gender: editChild.gender || '',
+        name: editChild.name || "",
+        email: editChild.email || "",
+        age: editChild.age || "",
+        password: "", // We do not edit password
       });
     } else {
-      setFormData({
-        name: '',
-        email: '',
-        age: '',
-        password: '',
-        gender: '',
-      });
+      setFormData({ name: "", email: "", age: "", password: "" });
     }
   }, [editChild]);
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    
-    // Only validate email and gender when adding a new child
-    if (!editChild) {
-      if (!formData.email) {
-        newErrors.email = 'Email is required';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email is invalid';
-      }
-      
-      if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.name || !formData.age || (!editChild && !formData.password)) {
+      setAlert({ type: "error", message: "Please fill all required fields!" });
+      return false;
     }
-    
-    if (!formData.age) {
-      newErrors.age = 'Age is required';
-    } else if (isNaN(formData.age) || formData.age < 3 || formData.age > 18) {
-      newErrors.age = 'Age must be between 3 and 18';
-    }
-    
-    if (!editChild && !formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password && formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      if (editChild) {
-        // Only update name and age when editing
-        onUpdate({ 
-          ...editChild, 
-          name: formData.name, 
-          age: formData.age 
-        });
-      } else {
-        onAdd(formData);
-      }
-      handleClose();
-    }
+    return true;
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    
-    if (errors[e.target.name]) {
-      setErrors({
-        ...errors,
-        [e.target.name]: '',
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    try {
+      setLoading(true);
+      setAlert({ type: "", message: "" });
+
+      if (editChild) {
+        // 🟢 Log the edit child ID
+        console.log("🟡 Editing Child ID:", editChild._id);
+
+        const response = await API.put(`/children/${editChild._id}`, {
+          name: formData.name,
+          age: Number(formData.age),
+          email: editChild.email, // Include email if backend expects it
+        });
+
+        if (onUpdate) {
+          onUpdate({
+            ...editChild,
+            name: formData.name,
+            age: formData.age,
+          });
+        }
+
+        setAlert({ type: "success", message: "Child updated successfully!" });
+      } else {
+        const response = await API.post("/children", {
+          name: formData.name,
+          email: formData.email,
+          age: Number(formData.age),
+          password: formData.password,
+        });
+
+        if (onAdd) {
+          onAdd({
+            name: formData.name,
+            email: formData.email,
+            age: Number(formData.age),
+            password: formData.password,
+          });
+        }
+
+        setAlert({ type: "success", message: "Child added successfully!" });
+      }
+
+  handleClose();
+    } catch (error) {
+      console.error("❌ API Error:", error.response?.data || error);
+      setAlert({
+        type: "error",
+        message: error.response?.data?.message || "Something went wrong!",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleClose = () => {
-    setFormData({
-      name: '',
-      email: '',
-      age: '',
-      password: '',
-      gender: '',
-    });
-    setErrors({});
-    onClose();
-  };
-
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Avatar sx={{ bgcolor: editChild ? 'warning.main' : 'primary.main' }}>
-            <PersonAdd />
-          </Avatar>
-          <Typography variant="h6">
-            {editChild ? 'Edit Child' : 'Add New Child'}
-          </Typography>
-        </Box>
-      </DialogTitle>
-
+    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+      <DialogTitle>{editChild ? "Edit Child" : "Add Child"}</DialogTitle>
       <DialogContent>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        {alert.message && (
+          <Alert severity={alert.type} sx={{ mb: 2 }}>
+            {alert.message}
+          </Alert>
+        )}
+        <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="name"
-            label="Full Name"
+            label="Name"
             name="name"
-            autoComplete="name"
-            autoFocus
             value={formData.name}
             onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
+            fullWidth
+            required
           />
-          
-          {/* Only show email field when adding a new child */}
           {!editChild && (
             <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
+              label="Email"
               name="email"
-              autoComplete="email"
               value={formData.email}
               onChange={handleChange}
-              error={!!errors.email}
-              helperText={errors.email}
+              fullWidth
+              required
             />
           )}
-          
-          <Box display="flex" gap={2}>
-            <TextField
-              margin="normal"
-              required
-              id="age"
-              label="Age"
-              name="age"
-              type="number"
-              value={formData.age}
-              onChange={handleChange}
-              error={!!errors.age}
-              helperText={errors.age}
-              inputProps={{ min: 3, max: 18 }}
-              sx={{ width: 120 }}
-            />
-            
-            {/* Only show gender field when adding a new child */}
-            {!editChild && (
-              <FormControl 
-                margin="normal" 
-                required 
-                error={!!errors.gender}
-                sx={{ minWidth: 120, flexGrow: 1 }}
-              >
-                <InputLabel id="gender-label">Gender</InputLabel>
-                <Select
-                  labelId="gender-label"
-                  id="gender"
-                  name="gender"
-                  value={formData.gender || ''}
-                  label="Gender"
-                  onChange={handleChange}
-                >
-                  <MenuItem value="male">Male</MenuItem>
-                  <MenuItem value="female">Female</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
-                </Select>
-                {errors.gender && (
-                  <Typography variant="caption" color="error" sx={{ ml: 2 }}>
-                    {errors.gender}
-                  </Typography>
-                )}
-              </FormControl>
-            )}
-          </Box>
-          
-          {/* Only show password field when adding a new child */}
+          <TextField
+            label="Age"
+            name="age"
+            type="number"
+            value={formData.age}
+            onChange={handleChange}
+            fullWidth
+            required
+          />
           {!editChild && (
             <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
               label="Password"
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              autoComplete="new-password"
+              name="password"
+              type="password"
               value={formData.password}
               onChange={handleChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
+              fullWidth
+              required
             />
           )}
-        </Box>
+        </Stack>
       </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={handleClose}>Cancel</Button>
+      <DialogActions>
+        <Button onClick={handleClose} disabled={loading}>
+          Cancel
+        </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={
-            editChild 
-              ? !formData.name || !formData.age
-              : !formData.name || !formData.email || !formData.age || !formData.gender
-          }
+          disabled={loading}
+          color="primary"
         >
-          {editChild ? 'Update Child' : 'Add Child'}
+          {loading ? <CircularProgress size={20} /> : editChild ? "Update" : "Add"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -4,10 +4,10 @@ import { useAuth } from './context/AuthContext';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ParentDashboard from './pages/ParentDashboard';
 import Layout from './components/common/Layout';
 import { CircularProgress, Box } from '@mui/material';
-import ChildDashboard from './pages/ChildDashboard';
+import { ParentDashboard } from './pages/ParentDashboard';
+import { ChildDashboard } from './pages/ChildDashboard';
 
 function App() {
   const { loading, isAuthenticated, isParent } = useAuth();

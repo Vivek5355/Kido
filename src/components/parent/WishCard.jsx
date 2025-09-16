@@ -1,6 +1,25 @@
 import React, { useState } from "react";
-import {Card,CardHeader,CardContent,CardActions,Avatar,Typography,IconButton,Stack,Tooltip,Chip,Box,} from "@mui/material";
-import { MoreVert, AddTask, Redeem, CheckCircle, Cancel, Star } from "@mui/icons-material";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardActions,
+  Avatar,
+  Typography,
+  IconButton,
+  Stack,
+  Tooltip,
+  Chip,
+  Box,
+} from "@mui/material";
+import {
+  MoreVert,
+  AddTask,
+  Redeem,
+  CheckCircle,
+  Cancel,
+  Star,
+} from "@mui/icons-material";
 import CreateTaskForm from "./CreateTaskForm";
 
 const WishCard = ({
@@ -22,6 +41,8 @@ const WishCard = ({
         return { color: "primary", label: "Available", icon: <Star /> };
       case "pending_approval":
         return { color: "warning", label: "Pending Approval", icon: <Star /> };
+      case "approved":
+        return { color: "success", label: "Approved", icon: <CheckCircle /> };
       case "redeemed":
         return { color: "success", label: "Redeemed", icon: <CheckCircle /> };
       case "rejected":
@@ -37,13 +58,15 @@ const WishCard = ({
     if (wish.childName) return wish.childName;
     return "Unknown Child";
   };
-
   return (
     <>
       <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         <CardHeader
           avatar={
-            <Avatar src={child?.profilePicture} sx={{ bgcolor: "secondary.main" }}>
+            <Avatar
+              src={child?.profilePicture}
+              sx={{ bgcolor: "secondary.main" }}
+            >
               {getChildName().charAt(0).toUpperCase()}
             </Avatar>
           }
@@ -62,7 +85,6 @@ const WishCard = ({
           title={<Typography variant="h6">{wish.title}</Typography>}
           subheader={`For: ${getChildName()}`}
         />
-
         <CardContent sx={{ flexGrow: 1 }}>
           <Stack spacing={2}>
             {wish.description && (
@@ -71,7 +93,12 @@ const WishCard = ({
               </Typography>
             )}
             <Stack direction="row" spacing={1}>
-              <Chip label={statusConfig.label} color={statusConfig.color} icon={statusConfig.icon} size="small" />
+              <Chip
+                label={statusConfig.label}
+                color={statusConfig.color}
+                icon={statusConfig.icon}
+                size="small"
+              />
             </Stack>
             {child && (
               <Box
@@ -88,7 +115,6 @@ const WishCard = ({
             )}
           </Stack>
         </CardContent>
-
         <CardActions>
           {userRole === "parent" && wish.status === "pending_approval" && (
             <>
@@ -101,17 +127,19 @@ const WishCard = ({
             </>
           )}
           {userRole === "child" && wish.status === "available" && canAfford && (
-            <IconButton onClick={() => onRequestRedemption(wish._id)} color="secondary">
+            <IconButton
+              onClick={() => onRequestRedemption(wish._id)}
+              color="secondary"
+            >
               <Redeem />
             </IconButton>
           )}
         </CardActions>
       </Card>
-
       <CreateTaskForm
         open={taskDialogOpen}
         onClose={() => setTaskDialogOpen(false)}
-        wish={wish} 
+        wish={wish}
         childrenList={childrenList}
         onTaskCreated={(task) => console.log("âœ… Task Created:", task)}
       />

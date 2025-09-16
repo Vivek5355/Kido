@@ -30,9 +30,13 @@ const ApprovalTaskItem = ({ task, children, onApprove, onReject }) => {
     if (task.childId) {
       return children.find((child) => child._id === task.childId);
     }
+
     if (task.child && task.child._id) {
-      return children.find((child) => child._id === task.child._id) || task.child;
+      return (
+        children.find((child) => child._id === task.child._id) || task.child
+      );
     }
+
     return null;
   };
 
@@ -52,10 +56,10 @@ const ApprovalTaskItem = ({ task, children, onApprove, onReject }) => {
       case "rejected":
         return { color: "error", label: "Rejected", icon: <Cancel /> };
       case "sent":
-        return { 
-          color: "info", 
-          label: "Sent", 
-          icon: <Star /> 
+        return {
+          color: "info",
+          label: "Sent",
+          icon: <Schedule />,
         };
       default:
         return { color: "default", label: "Unknown", icon: <Schedule /> };
@@ -76,145 +80,140 @@ const ApprovalTaskItem = ({ task, children, onApprove, onReject }) => {
 
   return (
     <>
-      <Paper
-        elevation={2}
-        sx={{
-          p: 2,
-          border: `2px solid ${statusConfig.color === 'default' ? 'grey' : statusConfig.color + '.main'}`,
-          borderRadius: 2,
-          position: "relative",
-        }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box display="flex" alignItems="center" gap={1} mb={1}>
-            <Avatar sx={{ width: 32, height: 32, fontSize: "0.875rem" }}>
-              {assignedChild?.name?.charAt(0) || "?"}
-            </Avatar>
-            <Typography variant="h6" component="div">
-              {task.title}
-            </Typography>
-            <Chip
-              {...statusConfig}
-              size="small"
-              icon={statusConfig.icon}
-            />
-          </Box>
+      <Paper elevation={2} sx={{ p: 3, mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+          <Avatar sx={{ bgcolor: "primary.main" }}>
+            {assignedChild?.name?.charAt(0) || "?"}
+          </Avatar>
 
-          {/* Approve/Reject Buttons for Sent Tasks */}
-          {task.status === "sent" && (
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                color="success"
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+              <Typography variant="h6" component="h3">
+                {task.title}
+              </Typography>
+              <Chip
+                label={statusConfig.label}
+                color={statusConfig.color}
+                icon={statusConfig.icon}
                 size="small"
-                startIcon={<ThumbUp />}
-                onClick={handleApprove}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                size="small"
-                startIcon={<ThumbDown />}
-                onClick={() => setOpenRejectDialog(true)}
-              >
-                Reject
-              </Button>
+              />
+            </Box>
+
+            {/* Approve/Reject Buttons for Sent Tasks */}
+            {(task.status === "sent" || task.status === "pending_approval") && (
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<ThumbUp />}
+                  onClick={handleApprove}
+                  size="small"
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<ThumbDown />}
+                  onClick={() => setOpenRejectDialog(true)}
+                  size="small"
+                >
+                  Reject
+                </Button>
+              </Stack>
+            )}
+
+            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
+              {task.category && (
+                <Chip label={task.category} variant="outlined" size="small" />
+              )}
+              {task.pointsAwarded && (
+                <Chip
+                  label={`${task.pointsAwarded} points`}
+                  color="primary"
+                  icon={<Star />}
+                  variant="outlined"
+                  size="small"
+                />
+              )}
+              {task.estimatedDuration && (
+                <Chip
+                  label={`${task.estimatedDuration} min`}
+                  variant="outlined"
+                  size="small"
+                />
+              )}
             </Stack>
-          )}
+
+            {task.description && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {task.description}
+              </Typography>
+            )}
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {assignedChild && (
+                <Typography variant="caption" color="text.secondary">
+                  Assigned to: {assignedChild.name}
+                </Typography>
+              )}
+
+              {task.dueDate && (
+                <Typography variant="caption" color="text.secondary">
+                  Due: {new Date(task.dueDate).toLocaleDateString()}
+                </Typography>
+              )}
+
+              {task.createdAt && (
+                <Typography variant="caption" color="text.secondary">
+                  Created: {new Date(task.createdAt).toLocaleDateString()}
+                </Typography>
+              )}
+
+              {task.approvedAt && (
+                <Typography variant="caption" color="success.main">
+                  ✅ Approved: {new Date(task.approvedAt).toLocaleDateString()}
+                </Typography>
+              )}
+
+              {task.rejectedAt && (
+                <Typography variant="caption" color="error.main">
+                  ❌ Rejected: {new Date(task.rejectedAt).toLocaleDateString()}
+                  {task.rejectionReason && ` - ${task.rejectionReason}`}
+                </Typography>
+              )}
+            </Box>
+          </Box>
         </Box>
-
-        <Box sx={{ mb: 1 }}>
-          {task.category && (
-            <Chip
-              label={task.category}
-              size="small"
-              variant="outlined"
-              sx={{ mr: 1, mb: 1 }}
-            />
-          )}
-          {task.pointsAwarded && (
-            <Chip
-              label={`${task.pointsAwarded} pts`}
-              size="small"
-              color="primary"
-              sx={{ mr: 1, mb: 1 }}
-            />
-          )}
-          {task.estimatedDuration && (
-            <Chip
-              label={task.estimatedDuration}
-              size="small"
-              variant="outlined"
-              sx={{ mr: 1, mb: 1 }}
-            />
-          )}
-        </Box>
-
-        {task.description && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            {task.description}
-          </Typography>
-        )}
-
-        {assignedChild && (
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Assigned to:</strong> {assignedChild.name}
-          </Typography>
-        )}
-
-        {task.dueDate && (
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Due:</strong> {new Date(task.dueDate).toLocaleDateString()}
-          </Typography>
-        )}
-
-        {task.createdAt && (
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            <strong>Created:</strong> {new Date(task.createdAt).toLocaleDateString()}
-          </Typography>
-        )}
-
-        {task.approvedAt && (
-          <Typography variant="body2" color="success.main" sx={{ mb: 0.5 }}>
-            ✅ <strong>Approved:</strong> {new Date(task.approvedAt).toLocaleDateString()}
-          </Typography>
-        )}
-
-        {task.rejectedAt && (
-          <Typography variant="body2" color="error.main" sx={{ mb: 0.5 }}>
-            ❌ <strong>Rejected:</strong> {new Date(task.rejectedAt).toLocaleDateString()}
-            {task.rejectionReason && ` - ${task.rejectionReason}`}
-          </Typography>
-        )}
       </Paper>
 
-      {/* Rejection Reason Dialog */}
-      <Dialog open={openRejectDialog} onClose={() => setOpenRejectDialog(false)}>
+      <Dialog
+        open={openRejectDialog}
+        onClose={() => setOpenRejectDialog(false)}
+      >
         <DialogTitle>Reject Task</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          <Typography gutterBottom>
             Please provide a reason for rejecting this task:
           </Typography>
           <TextField
             autoFocus
             margin="dense"
-            label="Rejection Reason"
             fullWidth
-            variant="outlined"
             multiline
             rows={3}
+            variant="outlined"
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Enter rejection reason..."
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenRejectDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handleReject} 
-            variant="contained" 
+          <Button
+            onClick={handleReject}
             color="error"
+            variant="contained"
             disabled={!rejectionReason.trim()}
           >
             Reject Task

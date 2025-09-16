@@ -11,7 +11,13 @@ import {
 } from "@mui/material";
 import { API } from "../api/axiosInstance";
 
-const CreateTaskForm = ({ open, onClose, wish, childrenList = [], onTaskCreated }) => {
+const CreateTaskForm = ({
+  open,
+  onClose,
+  wish,
+  childrenList = [],
+  onTaskCreated,
+}) => {
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -20,7 +26,6 @@ const CreateTaskForm = ({ open, onClose, wish, childrenList = [], onTaskCreated 
     wishId: "",
     type: 2,
   });
-
 
   useEffect(() => {
     if (open && wish) {
@@ -32,17 +37,20 @@ const CreateTaskForm = ({ open, onClose, wish, childrenList = [], onTaskCreated 
         wishId: wish._id || "",
         type: 2,
       });
-      
     }
   }, [wish, open]);
-console.log("form data in wish ====>", formData)
+  console.log("form data in wish ====>", formData);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (name === "childId") {AddTaskDialog
+    if (name === "childId") {
+      AddTaskDialog;
       const selectedChild = childrenList.find((child) => child._id === value);
-      console.log("ðŸ‘¶ Selected Child:", selectedChild?.name || "Unknown Child");
+      console.log(
+        "ðŸ‘¶ Selected Child:",
+        selectedChild?.name || "Unknown Child"
+      );
     }
   };
 
@@ -62,19 +70,20 @@ console.log("form data in wish ====>", formData)
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Create Task for Wish</DialogTitle>
       <DialogContent>
-
-
         <Stack spacing={2} sx={{ mt: 2 }}>
-
-
-           <TextField
+          <TextField
             label="Assigned Child"
             value={wish.childId?.name || "Unknown Child"}
             fullWidth
             disabled
           />
           {/* Show wish title */}
-          <TextField label="Wish" value={wish?.title || ""} fullWidth disabled />
+          <TextField
+            label="Wish"
+            value={wish?.title || ""}
+            fullWidth
+            disabled
+          />
 
           {/* Task title */}
           <TextField

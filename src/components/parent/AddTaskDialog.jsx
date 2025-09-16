@@ -20,16 +20,6 @@ import { Assignment, Star, Edit } from "@mui/icons-material";
 import dayjs from "dayjs";
 import { API } from "../api/axiosInstance";
 
-const TASK_CATEGORIES = [
-  { name: "Reading", points: 15, color: "primary" },
-  { name: "Math", points: 20, color: "secondary" },
-  { name: "Chores", points: 10, color: "success" },
-  { name: "Exercise", points: 25, color: "warning" },
-  { name: "Creative", points: 15, color: "info" },
-  { name: "Social", points: 12, color: "error" },
-  { name: "Other", points: 10, color: "default" },
-];
-
 const PRESET_TASKS = [
   {
     title: "Read for 20 minutes",
@@ -87,15 +77,10 @@ const AddTaskDialog = ({
   const isEditMode = !!editTask;
   const [formData, setFormData] = useState({
     title: "",
-    description: "",
-    category: "Other",
     points: 10,
-    dueDate: "",
     childId: "",
-    estimatedDuration: "",
   });
   const [errors, setErrors] = useState({});
-
   useEffect(() => {
     if (isEditMode && editTask) {
       let childId = "";
@@ -104,15 +89,13 @@ const AddTaskDialog = ({
       } else if (editTask.child && editTask.child._id) {
         childId = editTask.child._id;
       }
-
-      const childExists = children.find(child => child._id === childId);
-
       setFormData({
         title: editTask.title || "",
-        description: editTask.description || "",
         category: editTask.category || "Other",
         points: editTask.pointsAwarded || editTask.points || 10,
-        dueDate: editTask.dueDate ? dayjs(editTask.dueDate).format("YYYY-MM-DD") : "",
+        dueDate: editTask.dueDate
+          ? dayjs(editTask.dueDate).format("YYYY-MM-DD")
+          : "",
         childId: childId,
         estimatedDuration: editTask.estimatedDuration || "",
       });
@@ -120,7 +103,6 @@ const AddTaskDialog = ({
     } else {
       setFormData({
         title: "",
-        description: "",
         category: "Other",
         points: 10,
         dueDate: "",
@@ -133,17 +115,13 @@ const AddTaskDialog = ({
 
   const handleChange = (field) => (event) => {
     const value = event.target.value;
-    // console.log(`🔄 Field changed: ${field} = ${value}`);
-    
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
     if (field === "category") {
-      const categoryData = TASK_CATEGORIES.find(
-        (cat) => cat.name === value
-      );
+      const categoryData = TASK_CATEGORIES.find((cat) => cat.name === value);
       if (categoryData) {
         setFormData((prev) => ({
           ...prev,
@@ -173,41 +151,32 @@ const AddTaskDialog = ({
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.title.trim()) {
       newErrors.title = "Task title is required";
     }
-    
+
     if (!formData.childId) {
       newErrors.childId = "Please select a child";
     }
-    
     if (formData.points < 1 || formData.points > 100) {
       newErrors.points = "Points must be between 1 and 100";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSubmit = async () => {
-    // console.log("🚀 Submit form data:", formData);
-    
     if (!validateForm()) {
-      // console.log("❌ Form validation failed:", errors);
       return;
     }
-
     try {
       if (isEditMode) {
         if (editTask.status === "complete") {
           alert("Completed tasks cannot be edited.");
           return;
         }
-
         const updateData = {
           title: formData.title,
-          description: formData.description,
           category: formData.category,
           pointsAwarded: formData.points,
           dueDate: formData.dueDate,
@@ -215,17 +184,13 @@ const AddTaskDialog = ({
           status: editTask.status || "pending_approval",
           childId: formData.childId,
         };
-
-        // console.log("📤 Updating task with data:", updateData);
         const res = await API.put(`/tasks/${editTask?._id}`, updateData);
         console.log("✅ Task updated =====>", res.data);
-        
         onUpdate(res.data);
         handleClose();
       } else {
         const createData = {
           title: formData.title,
-          description: formData.description,
           category: formData.category,
           pointsAwarded: formData.points,
           dueDate: formData.dueDate,
@@ -235,32 +200,33 @@ const AddTaskDialog = ({
         };
 
         const res = await API.post("/tasks", createData);
-        
+
         console.log("✅ Full API Response =====>", res);
-        
+
         let taskData = res.data;
-        
+
         if (res.data && res.data.data) {
           taskData = res.data.data;
-        }
-        else if (res.data && res.data.task) {
+        } else if (res.data && res.data.task) {
           taskData = res.data.task;
         }
-        
-        
+
         if (taskData && taskData._id) {
           onAdd(taskData);
           handleClose();
-          
         } else {
-          console.error("❌ No valid task data in response - triggering refresh");
-          
+          console.error(
+            "❌ No valid task data in response - triggering refresh"
+          );
           onAdd(null);
           handleClose();
         }
       }
     } catch (error) {
-      console.error("❌ Error saving task:", error.response?.data || error.message);
+      console.error(
+        "❌ Error saving task:",
+        error.response?.data || error.message
+      );
       alert(error.response?.data?.message || "Something went wrong");
     }
   };
@@ -268,7 +234,7 @@ const AddTaskDialog = ({
   const handleClose = () => {
     setFormData({
       title: "",
-      description: "",
+      //description: "",
       category: "Other",
       points: 10,
       dueDate: "",
@@ -279,9 +245,9 @@ const AddTaskDialog = ({
     onClose();
   };
 
-  
-
-  const selectedChild = children.find((child) => child._id === formData.childId);
+  const selectedChild = children.find(
+    (child) => child._id === formData.childId
+  );
 
   if (formData.childId && !selectedChild) {
     console.warn("⚠️ ChildId not found in children array:", formData.childId);
@@ -315,7 +281,6 @@ const AddTaskDialog = ({
               </Box>
             </Box>
           )}
-
           <FormControl fullWidth error={!!errors.childId}>
             <InputLabel>Assign to Child</InputLabel>
             <Select
@@ -329,7 +294,8 @@ const AddTaskDialog = ({
                     <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
                       {child.name.charAt(0)}
                     </Avatar>
-                    {child.name} (Level {Math.floor((child.totalPoints || 0) / 50) + 1})
+                    {child.name} (Level{" "}
+                    {Math.floor((child.totalPoints || 0) / 50) + 1})
                   </Box>
                 </MenuItem>
               ))}
@@ -340,7 +306,6 @@ const AddTaskDialog = ({
               </Typography>
             )}
           </FormControl>
-
           <TextField
             label="Task Title"
             value={formData.title}
@@ -349,31 +314,7 @@ const AddTaskDialog = ({
             helperText={errors.title}
             fullWidth
           />
-
-          <TextField
-            label="Description (optional)"
-            value={formData.description}
-            onChange={handleChange("description")}
-            multiline
-            rows={2}
-            fullWidth
-          />
-
-          <FormControl fullWidth>
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={formData.category}
-              onChange={handleChange("category")}
-              label="Category"
-            >
-              {TASK_CATEGORIES.map((category) => (
-                <MenuItem key={category.name} value={category.name}>
-                  {category.name} (Recommended: {category.points} pts)
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
+          
           <TextField
             label="Points"
             type="number"
@@ -384,43 +325,6 @@ const AddTaskDialog = ({
             InputProps={{ inputProps: { min: 1, max: 100 } }}
             fullWidth
           />
-
-          <TextField
-            label="Due Date (optional)"
-            type="date"
-            value={formData.dueDate}
-            onChange={handleChange("dueDate")}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-
-          <TextField
-            label="Estimated Duration (optional)"
-            value={formData.estimatedDuration}
-            onChange={handleChange("estimatedDuration")}
-            placeholder="e.g., 30 min, 1 hour"
-            fullWidth
-          />
-
-          {selectedChild && (
-            <Box sx={{ p: 2, bgcolor: "primary.50", borderRadius: 1 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Task Preview:
-              </Typography>
-              <Typography variant="body2">
-                {selectedChild.name} will earn{" "}
-                <Chip
-                  label={`${formData.points} pts`}
-                  size="small"
-                  color="primary"
-                />{" "}
-                for completing: {formData.title || "this task"}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
-                Note: Task will appear in Approvals tab for immediate approval/rejection
-              </Typography>
-            </Box>
-          )}
         </Stack>
       </DialogContent>
 

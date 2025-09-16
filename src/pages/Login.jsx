@@ -15,6 +15,7 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API } from "../components/api/axiosInstance";
@@ -55,35 +56,52 @@ const Login = () => {
       const response = await API.post("/auth/login", {
         email: formData.email,
         password: formData.password,
-        role: formData.role, 
+        role: formData.role,
       });
+
       const userData = response.data;
+      console.log("Login response:", userData);
+
+      // Store user data in localStorage for components to access
+      if (userData.user) {
+        localStorage.setItem("kiddoUser", JSON.stringify(userData.user));
+      }
+      if (userData.token) {
+        localStorage.setItem("token", userData.token);
+      }
+
+      // Call AuthContext login
       login(userData, userData?.user?.role);
+      
+      // Navigate to dashboard
       navigate("/dashboard");
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       setError(
         err.response?.data?.message || "Login failed. Please try again."
       );
     } finally {
       setLoading(false);
     }
-
-    console.log("Form submitted", formData)
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Box textAlign="center" mb={3}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              🌟 Welcome Back
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Sign in to your Kiddo Rewards account
-            </Typography>
-          </Box>
+    <Container component="main" maxWidth="sm">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <Paper elevation={3} sx={{ padding: 4, width: "100%" }}>
+          <Typography component="h1" variant="h4" align="center" gutterBottom>
+            🌟 Welcome Back
+          </Typography>
+          <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 3 }}>
+            Sign in to your Kiddo Rewards account
+          </Typography>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -91,26 +109,8 @@ const Login = () => {
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={3}>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange("email")}
-                placeholder="parent@example.com"
-              />
-
-              <TextField
-                fullWidth
-                label="Password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange("password")}
-                placeholder="Your password"
-              />
-
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+            <Stack spacing={2}>
               <FormControl fullWidth>
                 <InputLabel>I am a</InputLabel>
                 <Select
@@ -123,46 +123,62 @@ const Login = () => {
                 </Select>
               </FormControl>
 
+              <TextField
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                value={formData.email}
+                onChange={handleChange("email")}
+              />
+
+              <TextField
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={handleChange("password")}
+              />
+
               <Button
                 type="submit"
-                variant="contained"
-                size="large"
                 fullWidth
-                sx={{ py: 1.5 }}
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
                 disabled={loading}
               >
                 {loading ? "Signing In..." : "Sign In"}
               </Button>
             </Stack>
-          </form>
 
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              OR
-            </Typography>
-          </Divider>
+            <Divider sx={{ my: 2 }}>OR</Divider>
 
-          <Box textAlign="center">
-            <Typography variant="body2">
-              Don't have an account?{" "}
+            <Box textAlign="center">
+              <Typography variant="body2">
+                Don't have an account?{" "}
+                <Link
+                  component="button"
+                  variant="body2"
+                  onClick={() => navigate("/register")}
+                >
+                  Sign up here
+                </Link>
+              </Typography>
               <Link
                 component="button"
                 variant="body2"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/")}
+                sx={{ mt: 1, display: "block" }}
               >
-                Sign up here
+                Back to Home
               </Link>
-            </Typography>
-          </Box>
-
-          <Box textAlign="center" mt={2}>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate("/")}
-            >
-              Back to Home
-            </Link>
+            </Box>
           </Box>
         </Paper>
       </Box>

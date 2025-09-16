@@ -1,0 +1,3 @@
+- [x] Update the task filter in the last tab (activeTab === 3) to only include tasks with status "sent" and "pending_approval"
+- [x] Update the wish filter in the last tab to only include wishes with status "pending_approval"
+- [x] Update the counts displayed accordingly

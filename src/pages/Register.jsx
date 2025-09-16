@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import {
   Container,
   Paper,
@@ -18,7 +17,6 @@ import { API } from "../components/api/axiosInstance";
 const ROLES = {
   PARENT: "parent",
 };
-
 const Register = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -31,13 +29,11 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
-
   const handleChange = (field) => (event) => {
     setFormData((prev) => ({
       ...prev,
       [field]: event.target.value,
     }));
-
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -45,7 +41,6 @@ const Register = () => {
       }));
     }
   };
-
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -71,8 +66,6 @@ const Register = () => {
           password: formData.password,
           role: "parent",
         });
-
-        // console.log("✅ Registration success:", res.data);
         localStorage.setItem("token", res.data.token);
         login(res.data, "parent");
         navigate("/dashboard");
@@ -152,13 +145,11 @@ const Register = () => {
               </Button>
             </Stack>
           </form>
-
           <Divider sx={{ my: 3 }}>
             <Typography variant="body2" color="text.secondary">
               OR
             </Typography>
           </Divider>
-
           <Box textAlign="center">
             <Typography variant="body2">
               Already have an account?{" "}
@@ -171,7 +162,6 @@ const Register = () => {
               </Link>
             </Typography>
           </Box>
-
           <Box textAlign="center" mt={2}>
             <Link
               component="button"

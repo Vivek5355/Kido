@@ -30,8 +30,10 @@ import { useAuth } from "../context/AuthContext";
 import ChildTasks from "../components/child/ChildTasks";
 import AddWishForm from "../components/child/AddWishForm";
 import { API } from "../components/api/axiosInstance";
+import { useLocation } from "react-router-dom";
 
 export const ChildDashboard = ({ activeTab }) => {
+  const location = useLocation();
   const { user } = useAuth();
   const [showConfetti, setShowConfetti] = useState(false);
   const [wishes, setWishes] = useState([]);
@@ -41,6 +43,7 @@ export const ChildDashboard = ({ activeTab }) => {
   const [completedTasks, setCompletedTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState("");
+  const [rewards, setRewards] = useState([]); // ✅ NEW state for rewards
 
   let localChild = {};
   try {
@@ -49,80 +52,17 @@ export const ChildDashboard = ({ activeTab }) => {
     localChild = {};
   }
 
-  console.log("AuthContext user:", user);
-  console.log("LocalStorage kiddoUser:", localChild);
-
-  const childId =
-    user?._id ||
-    user?.id ||
-    user?.user?._id ||
-    user?.user?.id ||
-    localChild._id ||
-    localChild.id ||
-    localChild.user?._id ||
-    localChild.user?.id;
-
-  const childData = {
-    id: childId,
-    name:
-      user?.name ||
-      localChild.name ||
-      user?.user?.name ||
-      localChild.user?.name ||
-      "Child User",
-    email:
-      user?.email ||
-      localChild.email ||
-      user?.user?.email ||
-      localChild.user?.email ||
-      "",
-    age:
-      user?.age ||
-      localChild.age ||
-      user?.user?.age ||
-      localChild.user?.age ||
-      8,
-    totalPoints:
-      user?.totalPoints ||
-      localChild.totalPoints ||
-      user?.user?.totalPoints ||
-      localChild.user?.totalPoints ||
-      150,
-    redeemedPoints:
-      user?.redeemedPoints ||
-      localChild.redeemedPoints ||
-      user?.user?.redeemedPoints ||
-      localChild.user?.redeemedPoints ||
-      50,
-    level:
-      user?.level ||
-      localChild.level ||
-      user?.user?.level ||
-      localChild.user?.level ||
-      3,
-    streak:
-      user?.streak ||
-      localChild.streak ||
-      user?.user?.streak ||
-      localChild.user?.streak ||
-      5,
-    role: "Child",
-  };
-
-  console.log("Final Child Data:", childData);
-  console.log("Final Child ID:", childData.id);
-
+  // ✅ Fetch Wishes
   const fetchWishes = async () => {
-    if (!childData.id) {
+    if (!user?.user?.user?._id) {
       setError("User ID not found. Please try logging in again.");
       setLoading(false);
       return;
     }
-
     setLoading(true);
     setError("");
     try {
-      const response = await API.get(`/wishes/child/${childData.id}`, {
+      const response = await API.get(`/wishes/child/${user?.user?.user?._id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
@@ -139,7 +79,6 @@ export const ChildDashboard = ({ activeTab }) => {
 
       setWishes(transformedWishes);
     } catch (err) {
-      console.error("Error fetching wishes:", err);
       if (err.response) {
         if (err.response.status === 401) {
           setError("Authentication failed. Please log in again.");
@@ -162,8 +101,9 @@ export const ChildDashboard = ({ activeTab }) => {
     }
   };
 
+  // ✅ Fetch Completed Tasks
   const fetchCompletedTasks = async () => {
-    if (!childData.id) {
+    if (!user?.user?.user?._id) {
       setTasksError("User ID not found. Please try logging in again.");
       setTasksLoading(false);
       return;
@@ -172,8 +112,7 @@ export const ChildDashboard = ({ activeTab }) => {
     setTasksLoading(true);
     setTasksError("");
     try {
-      console.log("Fetching completed tasks for child ID:", childData.id);
-      const response = await API.get(`/tasks/child/${childData.id}`, {
+      const response = await API.get(`/tasks/child/${user?.user?.user?._id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
@@ -185,33 +124,11 @@ export const ChildDashboard = ({ activeTab }) => {
           ["completed", "approved", "pending_approval"].includes(task.status)
         );
         setCompletedTasks(completed);
-
-        console.group("🏆 ACHIEVEMENTS TAB - COMPLETED TASKS LOG");
-        console.log("Total completed tasks:", completed.length);
-        console.table(
-          completed.map((task) => ({
-            ID: task._id,
-            Title: task.title,
-            Description: task.description,
-            Status: task.status,
-            Points: task.points || task.pointsAwarded || 0,
-            CompletedAt: task.completedAt
-              ? new Date(task.completedAt).toLocaleDateString()
-              : "N/A",
-          }))
-        );
-        console.groupEnd();
       } else {
-        console.error(
-          "Expected array but got:",
-          typeof response.data,
-          response.data
-        );
         setTasksError("Unexpected data format received from server");
         setCompletedTasks([]);
       }
     } catch (err) {
-      console.error("Error fetching completed tasks:", err);
       if (err.response) {
         if (err.response.status === 401) {
           setTasksError("Authentication failed. Please log in again.");
@@ -233,20 +150,50 @@ export const ChildDashboard = ({ activeTab }) => {
       setTasksLoading(false);
     }
   };
+  const fetchRewards = async () => {
+    if (!user?.user?.user?._id) {
+      console.error("User ID not found. Cannot fetch rewards.");
+      return;
+    }
+    try {
+      const response = await API.get(`/rewards/${user?.user?.user?.parent}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Rewards API Response:", response.data); // ✅ LOG response
+      setRewards(response.data); // store rewards in state
+    } catch (error) {
+      console.error("Error fetching rewards:", error);
+    }
+  };
+
+  const childSegments = ["tasks", "wishes", "achievements", "rewards"];
+  const basePath = "/dashboard/child";
+  const pathname = location.pathname || "";
+  let derivedTab = 0;
+  if (pathname.startsWith(basePath)) {
+    const afterBase = pathname.slice(basePath.length + 1);
+    const segment = afterBase.split("/")[0] || "";
+    const idx = childSegments.indexOf(segment);
+    if (idx >= 0) derivedTab = idx;
+  }
+  const currentTab = typeof activeTab === "number" ? derivedTab : derivedTab;
 
   useEffect(() => {
-    if (activeTab === 1 && childData.id) {
+    if (currentTab === 1 && user?.user?.user?._id) {
       fetchWishes();
-    } else if (activeTab === 1 && !childData.id) {
-      setError("User ID not found. Please try logging in again.");
     }
 
-    if (activeTab === 2 && childData.id) {
+    if (currentTab === 2 && user?.user?.user?._id) {
       fetchCompletedTasks();
-    } else if (activeTab === 2 && !childData.id) {
-      setTasksError("User ID not found. Please try logging in again.");
     }
-  }, [activeTab, childData.id]);
+
+    if (currentTab === 3 && user?.user?.user?._id) {
+      fetchRewards(); // ✅ CALL when on Rewards tab
+    }
+  }, [currentTab, user?.user?.user?._id]);
 
   const handleWishAdded = (newWish) => {
     const transformedWish = {
@@ -263,19 +210,43 @@ export const ChildDashboard = ({ activeTab }) => {
   };
 
   const handleRetry = () => {
-    if (childData.id) {
+    if (user?.user?.user?._id) {
       fetchWishes();
     } else {
       setError("User ID not found. Please try logging in again.");
     }
   };
   const handleTasksRetry = () => {
-    if (childData.id) {
+    if (user?.user?.user?._id) {
       fetchCompletedTasks();
     } else {
       setTasksError("User ID not found. Please try logging in again.");
     }
   };
+
+  const handleRedeemReward = async (rewardId) => {
+  try {
+    const response = await API.post(
+      `/rewards/redeem/${rewardId}`,
+      { childId: user?.user?.user?._id },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log("Redeem Response:", response.data);
+
+    alert("Reward redeemed successfully!");
+    fetchRewards();
+
+  } catch (error) {
+    console.error("Error redeeming reward:", error);
+    alert("Failed to redeem reward. Please try again.");
+  }
+};
+
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -283,16 +254,16 @@ export const ChildDashboard = ({ activeTab }) => {
 
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Welcome back, {childData.name}! 🌟
+          Welcome back, {user?.user?.user?.name} 🌟
         </Typography>
         <Typography variant="h6" color="text.secondary">
           You're doing amazing! Keep up the great work!
         </Typography>
       </Box>
 
-      {activeTab === 0 && <ChildTasks childId={childData.id} />}
+      {currentTab === 0 && <ChildTasks childId={user?.user?.user?._id} />}
 
-      {activeTab === 1 && (
+      {currentTab === 1 && (
         <Box>
           <Box
             sx={{
@@ -315,7 +286,7 @@ export const ChildDashboard = ({ activeTab }) => {
                 py: 1,
                 fontWeight: "bold",
               }}
-              disabled={!childData.id}
+              disabled={!user?.user?.user?._id}
             >
               Add Wish
             </Button>
@@ -351,7 +322,7 @@ export const ChildDashboard = ({ activeTab }) => {
                       variant="contained"
                       onClick={() => setShowAddWishForm(true)}
                       sx={{ mt: 2 }}
-                      disabled={!childData.id}
+                      disabled={!user?.user?.user?._id}
                     >
                       Add Your First Wish
                     </Button>
@@ -378,7 +349,7 @@ export const ChildDashboard = ({ activeTab }) => {
         </Box>
       )}
 
-      {activeTab === 2 && (
+      {currentTab === 2 && (
         <Box>
           <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
             <Celebration sx={{ mr: 1 }} />
@@ -519,6 +490,41 @@ export const ChildDashboard = ({ activeTab }) => {
         </Box>
       )}
 
+      {currentTab === 3 && (
+        <Box>
+          <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
+            Rewards
+          </Typography>
+          {rewards.length > 0 ? (
+            <Grid container spacing={3}>
+              {rewards.map((reward) => (
+                <Grid item xs={12} sm={6} md={4} key={reward._id}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6">{reward.rewardName}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Points: {reward.points}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                        onClick={() => handleRedeemReward(reward._id)}
+                      >
+                        Redeem
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Typography>No rewards found</Typography>
+          )}
+        </Box>
+      )}
+
       <Dialog
         open={showAddWishForm}
         onClose={() => setShowAddWishForm(false)}
@@ -537,7 +543,7 @@ export const ChildDashboard = ({ activeTab }) => {
         </DialogTitle>
         <DialogContent>
           <AddWishForm
-            childId={childData.id}
+            childId={user?.user?.user?._id}
             onWishAdded={handleWishAdded}
             onCancel={() => setShowAddWishForm(false)}
           />
@@ -546,4 +552,3 @@ export const ChildDashboard = ({ activeTab }) => {
     </Container>
   );
 };
-

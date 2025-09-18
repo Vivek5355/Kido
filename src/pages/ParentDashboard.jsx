@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -6,54 +6,65 @@ import {
   Box,
   Button,
   Alert,
-  Fab,
   Badge,
   Stack,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Tooltip,
   Snackbar,
-} from "@mui/material";
+  TextField,
+  Pagination,
+  Dialog,
+  Card,
+  CardContent,
+  Chip,
+  IconButton,
+} from '@mui/material';
 import {
   Add,
   Assignment,
   Notifications,
   Refresh,
-} from "@mui/icons-material";
-import ChildCard from "../components/parent/ChildCard";
-import AddChildDialog from "../components/parent/AddChildDialog";
-import AddTaskDialog from "../components/parent/AddTaskDialog";
-import TaskItem from "../components/parent/TaskItem";
-import ApprovalTaskItem from "../components/parent/ApprovalTaskItem";
-import { API } from "../components/api/axiosInstance";
-import { useAuth } from "../context/AuthContext";
-import ParentWishes from "../components/parent/ParentWishes";
+  Delete
+} from '@mui/icons-material';
+import { Autocomplete } from '@mui/material';
+import ChildCard from '../components/parent/ChildCard';
+import AddChildDialog from '../components/parent/AddChildDialog';
+import AddTaskDialog from '../components/parent/AddTaskDialog';
+import TaskItem from '../components/parent/TaskItem';
+import ApprovalTaskItem from '../components/parent/ApprovalTaskItem';
+import {API} from '../components/api/axiosInstance';
+import { useAuth } from '../context/AuthContext';
+import ParentWishes from '../components/parent/ParentWishes';
+import RewardForm from '../components/parent/RewardForm';
 
-export const ParentDashboard = ({
-  activeTab,
-  setActiveTab,
-  setPendingApprovals,
-}) => {
+export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }) => {
   const { user } = useAuth();
+  
+  // Dialog states
   const [openAddChild, setOpenAddChild] = useState(false);
   const [openAddTask, setOpenAddTask] = useState(false);
   const [openAddWish, setOpenAddWish] = useState(false);
+  const [openRewardForm, setOpenRewardForm] = useState(false);
+
+  // Data states
   const [children, setChildren] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [wishes, setWishes] = useState([]);
+  const [rewards, setRewards] = useState([]);
+
+  // Editing states
   const [editingChild, setEditingChild] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [editingWish, setEditingWish] = useState(null);
-  const [selectedChildId, setSelectedChildId] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState('');
+
+  // Stats
   const [stats, setStats] = useState({
     totalChildren: 0,
     totalTasks: 0,
     totalWishes: 0,
-    totalPoints: 0,
+    totalRewards: 0,
   });
+
+  // Toast notification
   const [toast, setToast] = useState({
     open: false,
     message: '',
@@ -61,198 +72,263 @@ export const ParentDashboard = ({
   });
 
   const statusColorMap = {
-    pending: "warning",
-    pending_approval: "warning",
-    approved: "success",
-    rejected: "error",
-    sent: "info",
-    complete: "default",
+    pending: 'warning',
+    'pending-approval': 'warning',
+    approved: 'success',
+    rejected: 'error',
+    sent: 'info',
+    complete: 'default',
   };
 
+  // Initial data fetch
   useEffect(() => {
-    if (user?.user?._id) {
+    if (user?.user?.user?._id) {
       fetchChildren();
       fetchTasks();
       fetchWishes();
+      fetchRewards();
     }
-  }, [user?.user?._id, activeTab]);
+  }, [user?.user?.user?._id]);
 
+  // Update stats
   useEffect(() => {
-    const totalPoints = children.reduce(
-      (sum, child) => sum + (child.totalPoints || 0),
-      0
-    );
+    const totalPoints = children.reduce((sum, child) => sum + (child.totalPoints || 0), 0);
     setStats({
       totalChildren: children.length,
       totalTasks: tasks.length,
       totalWishes: wishes.length,
       totalPoints: totalPoints,
+      totalRewards: rewards.length,
     });
-    const pendingTasks = tasks.filter(
-      (t) => t.status === "pending_approval"
-    ).length;
-    const pendingWishes = wishes.filter(
-      (w) => w.status === "pending_approval"
-    ).length;
+
+  console.log("--------",user.user.user._id)
+
+
+    const pendingTasks = tasks.filter(t => t.status === 'pending-approval').length;
+    const pendingWishes = wishes.filter(w => w.status === 'pending-approval').length;
     setPendingApprovals(pendingTasks + pendingWishes);
-  }, [children, tasks, wishes, setPendingApprovals]);
+  }, [children, tasks, wishes, rewards, setPendingApprovals]);
+
+  // Reset task page when child filter changes
+  useEffect(() => {
+    setTaskPage(1);
+  }, [selectedChildId]);
+
+  // Filter pending tasks for tab 1
+  useEffect(() => {
+    if (activeTab === 1) {
+      const pendingTasks = tasks.filter(task => 
+        task.status === 'pending-approval' || task.status === 'pending'
+      );
+    }
+  }, [activeTab, tasks]);
+  
+
+  // Fetch rewards when activeTab 3 is clicked
+  useEffect(() => {
+    if (activeTab === 3) {
+      fetchRewards();
+    }
+  }, [activeTab]);
 
   const showToast = (message, severity = 'success') => {
     setToast({ open: true, message, severity });
   };
-
+  console.log("children",children)
   const handleCloseToast = () => {
     setToast({ ...toast, open: false });
   };
 
   const fetchChildren = async () => {
     try {
-      const { data } = await API.get("/children");
+      const response = await API.get('/children');
+      const data = response.data
+      console.log("dffdd------",data)
       setChildren(Array.isArray(data) ? data : []);
     } catch (err) {
       setChildren([]);
-      console.error("Error fetching children:", err);
       showToast('Error fetching children', 'error');
     }
   };
 
   const fetchTasks = async () => {
-    if (!user?.user?._id) return;
+    if (!user?.user?.user?._id) return;
     try {
-      const { data } = await API.get(`/tasks/parent/${user?.user?._id}`);
+      const data = await API.get(`/tasks/parent/${user?.user?.user?._id}`);
+      console.log("cnc",data)
       const tasksData = data.data || data.tasks || data;
       setTasks(Array.isArray(tasksData) ? tasksData : []);
     } catch (err) {
       setTasks([]);
-      console.error("Error fetching tasks:", err);
       showToast('Error fetching tasks', 'error');
     }
   };
 
   const fetchWishes = async () => {
-    if (!user?.user?._id) return;
+    if (!user?.user?.user?._id) return;
     try {
-      const { data } = await API.get(`/wishes/parent/${user?.user?._id}`);
-      const wishesData = data.data || data;
+      const data = await API.get(`/wishes/parent/${user?.user?.user?._id}`);
+      console.log("data 2",data.data)
+      const wishesData = data.data.data || data;
+
       setWishes(Array.isArray(wishesData) ? wishesData : []);
     } catch (err) {
       setWishes([]);
-      console.error("Error fetching wishes:", err);
       showToast('Error fetching wishes', 'error');
     }
   };
 
+  const fetchRewards = async () => {
+    if (!user?.user?.user?._id) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await API.get(`/rewards/${user?.user?.user?._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Rewards API Response:', response.data);
+      setRewards(Array.isArray(response.data) ? response.data : []);
+      showToast('Rewards loaded successfully!', 'success');
+    } catch (err) {
+      console.error('Error fetching rewards:', err);
+      setRewards([]);
+      showToast('Error fetching rewards', 'error');
+    }
+  };
+
+  const handleDeleteReward = async (id) => {
+    try {
+      await API.delete(`/rewards/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      setRewards(prev => prev.filter(reward => reward.id !== id));
+      showToast('Reward deleted successfully!', 'error');
+    } catch (err) {
+      showToast('Error deleting reward', 'error');
+    }
+  };
+
   const handleAddChild = (c) => {
-    setChildren((prev) => [...prev, c]);
-    showToast('Child added successfully!');
+    setChildren(prev => [...prev, c]);
+    showToast('Child added successfully!', 'success');
   };
 
   const handleUpdateChild = (updated) => {
-    setChildren((prev) =>
-      prev.map((ch) => (ch._id === updated._id ? updated : ch))
-    );
-    showToast('Child updated successfully!');
+    setChildren(prev => prev.map(ch => ch.id === updated.id ? updated : ch));
+    showToast('Child updated successfully!', 'success');
   };
 
   const handleDeleteChild = async (id) => {
     try {
-      await API.delete(`/children/${id}`);
-      setChildren((prev) => prev.filter((ch) => ch._id !== id));
-      showToast('Child deleted successfully!');
+      await API.delete(`/children/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      setChildren(prev => prev.filter(ch => ch.id !== id));
+      showToast('Child deleted successfully!', 'error');
     } catch (err) {
-      console.error("Error deleting child:", err);
       showToast('Could not delete child. Please try again.', 'error');
     }
   };
 
   const handleAddTask = (t) => {
-    setTasks((prev) => [...prev, t]);
+    fetchTasks();
+    fetchChildren();
     showToast('Task added successfully!');
   };
 
   const handleUpdateTask = (updated) => {
-    setTasks((prev) => prev.map((t) => (t._id === updated._id ? updated : t)));
+    setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
     showToast('Task updated successfully!');
   };
 
   const handleDeleteTask = (id) => {
-    setTasks((prev) => prev.filter((t) => t._id !== id));
-    showToast('Task deleted successfully!');
+    setTasks(prev => prev.filter(t => t.id !== id));
+    showToast('Task deleted successfully!', 'error');
   };
 
   const handleApproveTask = async (id) => {
     try {
-      await API.put(`/tasks/${id}`, { status: "approved" });
-      setTasks((prev) =>
-        prev.map((t) => (t._id === id ? { ...t, status: "approved" } : t))
-      );
+      await API.put(`/tasks/${id}`, { status: 'approved' });
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'approved' } : t));
       showToast('Task approved successfully!');
     } catch (err) {
-      console.error("Error approving task:", err);
       showToast('Error approving task. Please try again.', 'error');
     }
   };
 
   const handleRejectTask = async (id, reason) => {
     try {
-      await API.put(`/tasks/${id}`, {
-        status: "rejected",
+      await API.put(`/tasks/${id}`, { 
+        status: 'rejected', 
         rejectionReason: reason,
       });
-      setTasks((prev) =>
-        prev.map((t) => (t._id === id ? { ...t, status: "rejected" } : t))
-      );
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'rejected' } : t));
       showToast('Task rejected successfully!');
     } catch (err) {
-      console.error("Error rejecting task:", err);
       showToast('Error rejecting task. Please try again.', 'error');
     }
   };
 
   const handleApproveWish = async (id) => {
     try {
-      await API.put(`/wishes/${id}`, { status: "approved" });
-      setWishes((prev) =>
-        prev.map((w) => (w._id === id ? { ...w, status: "approved" } : w))
-      );
+      await API.put(`/wishes/${id}`, { status: 'approved' });
+      setWishes(prev => prev.map(w => w.id === id ? { ...w, status: 'approved' } : w));
       showToast('Wish approved successfully!');
     } catch (err) {
-      console.error("Error approving wish:", err);
       showToast('Error approving wish. Please try again.', 'error');
     }
   };
 
   const handleRejectWish = async (id) => {
     try {
-      await API.put(`/wishes/${id}`, { status: "rejected" });
-      setWishes((prev) =>
-        prev.map((w) => (w._id === id ? { ...w, status: "rejected" } : w))
-      );
+      await API.put(`/wishes/${id}`, { status: 'rejected' });
+      setWishes(prev => prev.map(w => w.id === id ? { ...w, status: 'rejected' } : w));
       showToast('Wish rejected successfully!');
     } catch (err) {
-      console.error("Error rejecting wish:", err);
       showToast('Error rejecting wish. Please try again.', 'error');
     }
   };
 
-  const getChildById = (id) => children.find((c) => c._id === id);
-  const filteredTasks = selectedChildId
-    ? tasks.filter(
-        (task) =>
-          task.childId === selectedChildId ||
-          task.childId?._id === selectedChildId
+  const getChildById = (id) => children.find(c => c.id === id);
+
+  // Filter tasks based on selected child and active tab
+  const filteredTasks = selectedChildId 
+    ? tasks.filter(task => 
+        task.childId === selectedChildId || 
+        (task.child && task.child.id === selectedChildId)
       )
     : tasks;
+
+  // Filter tasks based on active tab
+  const displayTasks = filteredTasks.filter(task => {
+    // For activeTab 1, show only pending approval tasks
+    if (activeTab === 1) {
+      return task.status === 'pending-approval' || task.status === 'pending';
+    }
+    return true;
+  });
+
+  // Pagination state for tasks
+  const [taskPage, setTaskPage] = useState(1);
+  const tasksPerPage = 10;
+  const paginatedTasks = displayTasks.slice(
+    (taskPage - 1) * tasksPerPage,
+    taskPage * tasksPerPage
+  );
+
   const selectedChild = selectedChildId ? getChildById(selectedChildId) : null;
-  const pendingTaskCount = tasks.filter(
-    (t) => t.status === "pending_approval"
-    ).length;
-  const approvalTaskCount = tasks.filter((t) =>
-    ["sent", "pending_approval"].includes(t.status)
-    ).length;
-  const pendingWishCount = wishes.filter(
-    (w) => w.status === "pending_approval"
-    ).length;
+  const pendingTaskCount = tasks.filter(t => t.status === 'pending-approval').length;
+  const approvalTaskCount = tasks.filter(t => ['sent', 'pending-approval'].includes(t.status)).length;
+  const pendingWishCount = wishes.filter(w => w.status === 'pending-approval').length;
   const totalPending = pendingTaskCount + pendingWishCount;
 
   return (
@@ -260,26 +336,24 @@ export const ParentDashboard = ({
       {/* Toast notification */}
       <Snackbar
         open={toast.open}
-        autoHideDuration={4000}
+        autoHideDuration={6000}
         onClose={handleCloseToast}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert
-          onClose={handleCloseToast}
-          severity={toast.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={handleCloseToast} severity={toast.severity} sx={{ width: '100%' }}>
           {toast.message}
         </Alert>
       </Snackbar>
 
+      {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ mb: 1, fontWeight: "bold" }}>
-          Welcome back, {user?.name || user?.user?.name}!
+        <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
+          Welcome back, {user?.user?.user?.name || user?.user?.name}!
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Manage your children's learning journey
         </Typography>
+
         <Button
           variant={totalPending > 0 ? "contained" : "outlined"}
           color={totalPending > 0 ? "error" : "primary"}
@@ -288,93 +362,114 @@ export const ParentDashboard = ({
               <Notifications />
             </Badge>
           }
-          onClick={() => setActiveTab(3)}
+          onClick={() => setActiveTab(4)}
         >
           Approvals {totalPending > 0 && `(${totalPending})`}
         </Button>
+
         <Button
           variant="outlined"
           color="primary"
           startIcon={<Refresh />}
           sx={{ ml: 2 }}
           onClick={() => {
-            fetchChildren();
-            fetchTasks();
-            fetchWishes();
+            if (activeTab === 0) fetchChildren();
+            else if (activeTab === 1) fetchTasks();
+            else if (activeTab === 2) fetchWishes();
+            else if (activeTab === 3) fetchRewards();
+            else if (activeTab === 4) fetchTasks();
+            else {
+              fetchChildren();
+              fetchTasks();
+              fetchWishes();
+              fetchRewards();
+            }
             showToast('Data refreshed successfully!');
+            setTaskPage(1);
           }}
         >
           Refresh
         </Button>
       </Box>
 
+      {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {[
-          stats.totalChildren,
-          stats.totalTasks,
-          stats.totalWishes,
-          stats.totalPoints,
-        ].map((v, i) => (
+        {[stats.totalChildren, stats.totalTasks, stats.totalWishes, stats.totalRewards].map((v, i) => (
           <Grid item xs={12} sm={6} md={3} key={i}>
             <Box
               sx={{
-                textAlign: "center",
+                textAlign: 'center',
                 p: 2,
-                bgcolor: [
-                  "primary.50",
-                  "info.50",
-                  "secondary.50",
-                  "success.50",
-                ][i],
+                bgcolor: ['info.50', 'secondary.50', 'success.50', 'primary.50'][i],
                 borderRadius: 2,
               }}
             >
               <Typography
                 variant="h3"
                 sx={{
-                  fontWeight: "bold",
-                  color: [
-                    "primary.main",
-                    "info.main",
-                    "secondary.main",
-                    "success.main",
-                  ][i],
+                  fontWeight: 'bold',
+                  color: ['primary.main', 'info.main', 'secondary.main', 'warning.main'][i],
                 }}
               >
                 {v}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {
-                  ["Children", "Total Tasks", "Total Wishes", "Points Earned"][
-                    i
-                  ]
-                }
+                {['Children', 'Total Tasks', 'Total Wishes', 'Rewards'][i]}
               </Typography>
             </Box>
           </Grid>
         ))}
       </Grid>
 
+      {/* Tab Content */}
       {activeTab === 0 && (
         <Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+            <Typography variant="h5">My Children ({children.length})</Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                startIcon={<Assignment />}
+                onClick={() => {
+                  setEditingTask(null);
+                  setOpenAddTask(true);
+                }}
+                disabled={children.length === 0}
+                sx={{ mr: 1 }}
+              >
+                Add Task
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => {
+                  setEditingChild(null);
+                  setOpenAddChild(true);
+                }}
+              >
+                Add Child
+              </Button>
+            </Stack>
+          </Stack>
+
           {children.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 8 }}>
-              <Typography variant="h6" sx={{ mb: 2, color: "text.secondary" }}>
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                 No children added yet
               </Typography>
               <Button
                 variant="contained"
-                size="large"
                 startIcon={<Add />}
                 onClick={() => setOpenAddChild(true)}
+                size="large"
               >
                 Add Your First Child
               </Button>
             </Box>
           ) : (
             <Grid container spacing={3}>
-              {children.map((c) => (
-                <Grid item xs={12} md={6} lg={4} key={c._id}>
+              {children.map(c => (
+                <Grid item xs={12} sm={6} md={4} key={c.id}>
                   <ChildCard
                     child={c}
                     onEdit={() => {
@@ -392,17 +487,10 @@ export const ParentDashboard = ({
 
       {activeTab === 1 && (
         <Box>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 3,
-            }}
-          >
-            <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-              All Tasks ({filteredTasks.length}
-              {selectedChild && ` for ${selectedChild.name}`})
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+              Pending Approval Tasks ({displayTasks.length})
+              {selectedChild && ` for ${selectedChild.name}`}
             </Typography>
             <Button
               variant="contained"
@@ -415,74 +503,58 @@ export const ParentDashboard = ({
               Add Task
             </Button>
           </Box>
+
           {children.length > 0 && (
             <Box sx={{ mb: 3, maxWidth: 300 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="select-child-label">Filter by Child</InputLabel>
-                <Select
-                  labelId="select-child-label"
-                  value={selectedChildId}
-                  onChange={(e) => setSelectedChildId(e.target.value)}
-                >
-                  <MenuItem value="">
-                    <em>All Children</em>
-                  </MenuItem>
-                  {children.map((child) => (
-                    <MenuItem key={child._id} value={child._id}>
-                      {child.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                size="small"
+                options={[{ id: '', name: 'All Children' }, ...children]}
+                getOptionLabel={(option) => option.name}
+                value={children.find(c => c.id === selectedChildId) || { id: '', name: 'All Children' }}
+                onChange={(e, newValue) => {
+                  setSelectedChildId(newValue?.id || '');
+                }}
+                clearOnEscape
+                renderInput={(params) => (
+                  <TextField {...params} label="Filter by Child" variant="outlined" />
+                )}
+              />
             </Box>
           )}
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ mb: 3 }}
-            flexWrap="wrap"
-            gap={1}
-          >
-            {[
-              { label: "Pending Approval", status: "pending_approval" },
-              { label: "Approved", status: "approved" },
-              { label: "Rejected", status: "rejected" },
-              { label: "Sent", status: "sent" },
-              { label: "Complete", status: "complete" },
-            ].map(({ label, status }) => (
-              <Chip
-                key={status}
-                label={`${label} (${
-                  filteredTasks.filter((t) => t.status === status).length
-                })`}
-                color={statusColorMap[status] || "default"}
-                variant="outlined"
-              />
-            ))}
-          </Stack>
+
           {!children.length ? (
             <Alert severity="info">Add children first.</Alert>
-          ) : !filteredTasks.length ? (
+          ) : !displayTasks.length ? (
             <Alert severity="info">
-              {selectedChild
-                ? `No tasks found for ${selectedChild.name}.`
-                : "No tasks yet."}
+              {selectedChild ? `No pending tasks found for ${selectedChild.name}.` : 'No pending tasks yet.'}
             </Alert>
           ) : (
-            <Stack spacing={2}>
-              {filteredTasks.map((t) => (
-                <TaskItem
-                  key={t._id}
-                  task={t}
-                  children={children}
-                  onEdit={(task) => {
-                    setEditingTask(task);
-                    setOpenAddTask(true);
-                  }}
-                  onDelete={handleDeleteTask}
+            <>
+              <Stack spacing={2}>
+                {paginatedTasks.map(t => (
+                  <TaskItem
+                    key={t.id}
+                    task={t}
+                    children={children}
+                    onEdit={(task) => {
+                      setEditingTask(task);
+                      setOpenAddTask(true);
+                    }}
+                    onDelete={handleDeleteTask}
+                  />
+                ))}
+              </Stack>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, gap: 2 }}>
+                <Pagination
+                  count={Math.ceil(displayTasks.length / tasksPerPage)}
+                  page={taskPage}
+                  onChange={(e, page) => setTaskPage(page)}
+                  color="primary"
+                  size="small"
                 />
-              ))}
-            </Stack>
+              </Box>
+            </>
           )}
         </Box>
       )}
@@ -493,14 +565,81 @@ export const ParentDashboard = ({
           wishes={wishes}
           onApprove={handleApproveWish}
           onReject={handleRejectWish}
+          onAddTask={handleAddTask}
         />
       )}
 
       {activeTab === 3 && (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+              Rewards ({rewards.length})
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              onClick={() => setOpenRewardForm(true)}
+            >
+              Add Reward
+            </Button>
+          </Box>
+
+          {rewards.length === 0 ? (
+            <Alert severity="info">No rewards created yet.</Alert>
+          ) : (
+            <Grid container spacing={2}>
+              {rewards.map(reward => (
+                <Grid item xs={12} sm={6} md={4} key={reward.id}>
+                  <Card>
+                    <CardContent>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            {reward.rewardName}
+                          </Typography>
+                          <Chip
+                            label={`${reward.points} points`}
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Box>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteReward(reward.id)}
+                          color="error"
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+
+          <RewardForm
+            open={openRewardForm}
+            onClose={() => setOpenRewardForm(false)}
+            onSubmit={(data) => {
+              console.log('Reward submitted:', data);
+              showToast('Reward created successfully!');
+              setOpenRewardForm(false);
+              fetchRewards();
+            }}
+            parentId={user?.user?.user?.id}
+          />
+        </Box>
+      )}
+
+      {activeTab === 4 && (
         <>
           <Typography variant="h6" gutterBottom>
             Task Approvals ({approvalTaskCount})
           </Typography>
+
           {!children.length ? (
             <Alert severity="info">No children available.</Alert>
           ) : approvalTaskCount === 0 ? (
@@ -508,9 +647,9 @@ export const ParentDashboard = ({
           ) : (
             <Grid container spacing={2}>
               {tasks
-                .filter((t) => ["sent", "pending_approval"].includes(t.status))
-                .map((t) => (
-                  <Grid item xs={12} key={t._id}>
+                .filter(t => ['sent', 'pending-approval'].includes(t.status))
+                .map(t => (
+                  <Grid item xs={12} key={t.id}>
                     <ApprovalTaskItem
                       task={t}
                       children={children}
@@ -524,33 +663,7 @@ export const ParentDashboard = ({
         </>
       )}
 
-      {children.length > 0 && (
-        <Tooltip title="Add Task" placement="left">
-          <Fab
-            color="primary"
-            sx={{ position: "fixed", bottom: 16, right: 80 }}
-            onClick={() => {
-              setEditingTask(null);
-              setOpenAddTask(true);
-            }}
-          >
-            <Assignment />
-          </Fab>
-        </Tooltip>
-      )}
-      <Tooltip title="Add Child" placement="left">
-        <Fab
-          color="primary"
-          sx={{ position: "fixed", bottom: 16, right: 16 }}
-          onClick={() => {
-            setEditingChild(null);
-            setOpenAddChild(true);
-          }}
-        >
-          <Add />
-        </Fab>
-      </Tooltip>
-
+      {/* Dialogs */}
       <AddChildDialog
         open={openAddChild}
         handleClose={() => {
@@ -561,16 +674,25 @@ export const ParentDashboard = ({
         onUpdate={handleUpdateChild}
         editChild={editingChild}
       />
+
       <AddTaskDialog
         open={openAddTask}
         onClose={() => {
           setOpenAddTask(false);
           setEditingTask(null);
         }}
-        onAdd={handleAddTask}
+        onAdd={(task) => {
+          if (task) {
+            handleAddTask(task);
+            setSelectedChildId(task.childId);
+          } else {
+            fetchTasks();
+          }
+        }}
         onUpdate={handleUpdateTask}
         children={children}
         editTask={editingTask}
+        initialChildId={selectedChildId}
       />
     </Container>
   );

@@ -22,13 +22,14 @@ import {
 } from "@mui/icons-material";
 import CreateTaskForm from "./CreateTaskForm";
 
-const WishCard = ({
+ const WishCard = ({
   wish,
   child,
   userRole,
   onApprove,
   onReject,
   onRequestRedemption,
+  onAddTask,
   childrenList = [],
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -77,9 +78,6 @@ const WishCard = ({
                   <AddTask />
                 </IconButton>
               </Tooltip>
-              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <MoreVert />
-              </IconButton>
             </Stack>
           }
           title={<Typography variant="h6">{wish.title}</Typography>}
@@ -93,12 +91,7 @@ const WishCard = ({
               </Typography>
             )}
             <Stack direction="row" spacing={1}>
-              <Chip
-                label={statusConfig.label}
-                color={statusConfig.color}
-                icon={statusConfig.icon}
-                size="small"
-              />
+            
             </Stack>
             {child && (
               <Box
@@ -108,9 +101,6 @@ const WishCard = ({
                   borderRadius: 1,
                 }}
               >
-                <Typography variant="caption" color="text.secondary">
-                  Available Points: {availablePoints} / {wish.pointsRequired}
-                </Typography>
               </Box>
             )}
           </Stack>
@@ -141,7 +131,7 @@ const WishCard = ({
         onClose={() => setTaskDialogOpen(false)}
         wish={wish}
         childrenList={childrenList}
-        onTaskCreated={(task) => console.log("âœ… Task Created:", task)}
+        onTaskCreated={onAddTask}
       />
     </>
   );

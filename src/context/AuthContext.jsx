@@ -19,29 +19,31 @@ const safeParse = (value, defaultValue = null) => {
   }
 };
 
-// AuthProvider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount, load user and role from localStorage
   useEffect(() => {
-    const savedUser = JSON.parse(localStorage.getItem("kiddoUser"));
+    const savedRaw = safeParse(localStorage.getItem("kiddoUser"), null);
     const savedRole = localStorage.getItem("kiddoUserRole");
-    setUser(savedUser?.user);
+
+    const normalized = savedRaw
+      ? (savedRaw.user ? savedRaw : { user: savedRaw })
+      : null;
+
+    setUser(normalized);
     setUserRole(savedRole && savedRole !== "undefined" ? savedRole : null);
     setLoading(false);
   }, []);
 
-  // Login function: save user and role to state and localStorage
   const login = (userData, role) => {
-    setUser(userData);
+    const normalized = userData ? { user: userData } : null;
+    setUser(normalized);
     setUserRole(role);
-    if (userData) localStorage.setItem("kiddoUser", JSON.stringify(userData));
+    if (normalized) localStorage.setItem("kiddoUser", JSON.stringify(normalized));
     if (userData?.token) localStorage.setItem("token", userData.token);
     if (role) localStorage.setItem("kiddoUserRole", role);
-    // console.lo
   };
 
   // Logout function: clear user and role from state and localStorage
@@ -62,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     user,
     userRole,
     loading,
-    isAuthenticated: Boolean(user),
+    isAuthenticated: Boolean(user?.user),
     isParent: userRole === "parent",
     isChild: userRole === "child",
     login,

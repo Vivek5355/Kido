@@ -13,6 +13,37 @@ function App() {
   const { loading, isAuthenticated, isParent } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+
+  const ParentShell = () => (
+    <Layout 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
+      pendingApprovals={pendingApprovals} 
+      isParent={true}
+    >
+      <ParentDashboard 
+        key={activeTab}
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        setPendingApprovals={setPendingApprovals} 
+      />
+    </Layout>
+  );
+
+  const ChildShell = () => (
+    <Layout 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
+      pendingApprovals={pendingApprovals} 
+      isParent={false}
+    >
+      <ChildDashboard 
+        key={activeTab}
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab}
+      />
+    </Layout>
+  );
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -29,29 +60,31 @@ function App() {
         path="/dashboard" 
         element={
           isAuthenticated ? (
-            <Layout 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
-              pendingApprovals={pendingApprovals} 
-              isParent={isParent}
-            >
-              {isParent ? (
-                <ParentDashboard 
-                  activeTab={activeTab} 
-                  setActiveTab={setActiveTab} 
-                  setPendingApprovals={setPendingApprovals} 
-                />
-              ) : (
-                <ChildDashboard 
-                  activeTab={activeTab} 
-                  setActiveTab={setActiveTab}
-                />
-              )}
-            </Layout>
+            <Navigate to={isParent ? "/dashboard/parent" : "/dashboard/child"} />
           ) : (
             <Navigate to="/login" />
           )
-        } 
+        }
+      />
+      <Route 
+        path="/dashboard/parent/*" 
+        element={
+          isAuthenticated && isParent ? (
+            <ParentShell />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route 
+        path="/dashboard/child/*" 
+        element={
+          isAuthenticated && !isParent ? (
+            <ChildShell />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

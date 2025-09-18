@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -57,21 +58,14 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
       setAlert({ type: "", message: "" });
 
       if (editChild) {
-        // 🟢 Log the edit child ID
-        console.log("🟡 Editing Child ID:", editChild._id);
-
         const response = await API.put(`/children/${editChild._id}`, {
           name: formData.name,
           age: Number(formData.age),
-          email: editChild.email, // Include email if backend expects it
+          email: editChild.email, 
         });
 
         if (onUpdate) {
-          onUpdate({
-            ...editChild,
-            name: formData.name,
-            age: formData.age,
-          });
+          onUpdate(response.data.child || response.data);
         }
 
         setAlert({ type: "success", message: "Child updated successfully!" });
@@ -84,18 +78,13 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
         });
 
         if (onAdd) {
-          onAdd({
-            name: formData.name,
-            email: formData.email,
-            age: Number(formData.age),
-            password: formData.password,
-          });
+          onAdd(response.data.child || response.data);
         }
 
         setAlert({ type: "success", message: "Child added successfully!" });
       }
 
-  handleClose();
+      handleClose();
     } catch (error) {
       console.error("❌ API Error:", error.response?.data || error);
       setAlert({
@@ -111,11 +100,7 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>{editChild ? "Edit Child" : "Add Child"}</DialogTitle>
       <DialogContent>
-        {alert.message && (
-          <Alert severity={alert.type} sx={{ mb: 2 }}>
-            {alert.message}
-          </Alert>
-        )}
+        
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             label="Name"

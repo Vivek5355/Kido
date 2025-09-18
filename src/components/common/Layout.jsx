@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Logout } from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Layout = ({
   children,
@@ -25,11 +25,13 @@ const Layout = ({
 }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const parentTabs = [
     { label: "My Children", value: 0 },
     { label: "All Tasks", value: 1 },
     { label: "All Wishes", value: 2 },
+    { label: "Rewards", value: 3 },
     {
       label: (
         <Box display="flex" alignItems="center" gap={1}>
@@ -39,17 +41,37 @@ const Layout = ({
           )}
         </Box>
       ),
-      value: 3,
+      value: 4,
     },];
   const childTabs = [
     { label: "My Tasks", value: 0 },
     { label: "My Wishes", value: 1 },
     { label: "Achievements", value: 2 },
+    { label: "Rewards", value: 3},
   ];
   const currentTabs = isParent ? parentTabs : childTabs;
+
+  const parentSegments = ["children", "tasks", "wishes","rewards" ,"approvals",];
+  const childSegments = ["tasks", "wishes", "achievements","rewards",];
+  const basePath = isParent ? "/dashboard/parent" : "/dashboard/child";
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+    const segment = isParent ? parentSegments[newValue] : childSegments[newValue];
+    navigate(`${basePath}/${segment}`, { replace: false });
   };
+
+  useEffect(() => {
+    const pathname = location.pathname || "";
+    if (!pathname.startsWith(basePath)) return;
+    const afterBase = pathname.slice(basePath.length + 1); 
+    const segment = afterBase.split("/")[0] || "";
+    const segments = isParent ? parentSegments : childSegments;
+    const idx = segments.indexOf(segment);
+    if (idx >= 0 && idx !== activeTab) {
+      setActiveTab(idx);
+    }
+  }, [location.pathname, isParent]);
   const handleLogout = () => {
     logout();
     navigate("/");

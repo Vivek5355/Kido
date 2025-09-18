@@ -14,13 +14,12 @@ import {
   Paper,
   Divider,
   Snackbar,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Star,
-  PendingActions,
-  Celebration,
   Send,
-  Notifications,
 } from "@mui/icons-material";
 import Confetti from "react-confetti";
 import { API } from "../api/axiosInstance";
@@ -31,7 +30,7 @@ const ChildTasks = ({ childId }) => {
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const [sendingTaskId, setSendingTaskId] = useState(null);
-  const [toastOpen, setToastOpen] = useState(false); // ✅ Snackbar state
+  const [activeTab, setActiveTab] = useState(0);
   const [stats, setStats] = useState({
     totalPoints: 0,
     availablePoints: 0,
@@ -45,16 +44,28 @@ const ChildTasks = ({ childId }) => {
     [tasks]
   );
 
+  const pendingApprovalTasks = useMemo(
+    () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "pending_approval"),
+    [tasks]
+  );
+
+  const approvedTasks = useMemo(
+    () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "approved"),
+    [tasks]
+  );
+
+  const rejectedTasks = useMemo(
+    () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "rejected"),
+    [tasks]
+  );
+
   const sentTasks = useMemo(
-    () => tasks.filter((task) => task.status === "sent"),
+    () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "sent"),
     [tasks]
   );
 
   const completedTasks = useMemo(
-    () =>
-      tasks.filter((task) =>
-        ["completed", "approved", "pending_approval"].includes(task.status)
-      ),
+    () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "completed"),
     [tasks]
   );
 
@@ -68,7 +79,6 @@ const ChildTasks = ({ childId }) => {
       setLoading(true);
       setError("");
       try {
-        console.log("Fetching tasks for child ID:", childId);
         const response = await API.get(`/tasks/child/${childId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -80,6 +90,7 @@ const ChildTasks = ({ childId }) => {
           const pending = response.data.filter(
             (task) => task.status === "pending"
           ).length;
+          console.log("Pending tasks count:", pending);
           const completed = response.data.filter((task) =>
             ["completed", "approved", "pending_approval", "sent"].includes(
               task.status
@@ -146,6 +157,70 @@ const ChildTasks = ({ childId }) => {
     fetchTasks();
   }, [childId]);
 
+  const TabPanel = ({ children, value, index }) => (
+    <div role="tabpanel" hidden={value !== index}>
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+
+  const renderTasks = (taskList, showSendButton = false, showCompletedAt = false) => (
+    taskList.length > 0 ? (
+      <Grid container spacing={2}>
+        {taskList.map((task) => (
+          <Grid item xs={12} sm={6} md={4} key={task._id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  {task.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  {task.description}
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                  <Chip
+                    icon={<Star />}
+                    label={`${task.points || task.pointsAwarded || 0} points`}
+                    color={task.status?.replace(/\s+/g, '_').toLowerCase() === "approved" ? "success" : task.status?.replace(/\s+/g, '_').toLowerCase() === "pending_approval" ? "warning" : "primary"}
+                    size="small"
+                  />
+                  {showSendButton && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<Send sx={{ fontSize: 16 }} />}
+                      onClick={() => handleSendTask(task._id)}
+                      disabled={sendingTaskId === task._id}
+                      color="primary"
+                      sx={{
+                        fontSize: "1rem",
+                        px: 1,
+                        py: 0.3,
+                        minWidth: "auto",
+                      }}
+                    >
+                      {sendingTaskId === task._id ? "Sending..." : "Send Task"}
+                    </Button>
+                  )}
+                </Stack>
+                {showCompletedAt && task.completedAt && (
+                  <Typography variant="caption" color="text.secondary">
+                    Completed on: {new Date(task.completedAt).toLocaleDateString()}
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    ) : (
+      <Alert severity="info">No tasks in this category.</Alert>
+    )
+  );
+
   const handleSendTask = async (taskId) => {
     try {
       setSendingTaskId(taskId);
@@ -172,8 +247,6 @@ const ChildTasks = ({ childId }) => {
         sentTasks: prev.sentTasks + 1,
       }));
       setShowConfetti(true);
-      setToastOpen(true); // ✅ Show toast
-      setTimeout(() => setShowConfetti(false), 3000);
     } catch (err) {
       console.error("Error sending task:", err);
       setError("Failed to send task");
@@ -201,19 +274,6 @@ const ChildTasks = ({ childId }) => {
   return (
     <Container>
       {showConfetti && <Confetti />}
-
-      {/* ✅ Snackbar for success message */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={3000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert severity="success" onClose={() => setToastOpen(false)}>
-          Task sent successfully!
-        </Alert>
-      </Snackbar>
-
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -247,154 +307,38 @@ const ChildTasks = ({ childId }) => {
         </Grid>
       </Grid>
 
-      {/* Pending Tasks */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          <PendingActions sx={{ mr: 1 }} />
-          Pending Tasks ({pendingTasks.length})
-        </Typography>
+      <Tabs
+        value={activeTab}
+        onChange={(e, newValue) => setActiveTab(newValue)}
+        aria-label="Task Status Tabs"
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ mb: 3 }}
+      >
+        <Tab label={`Pending (${pendingTasks.length})`} />
+        <Tab label={`Approved (${approvedTasks.length})`} />
+        <Tab label={`Rejected (${rejectedTasks.length})`} />
+        <Tab label={`Sent (${sentTasks.length})`} />
+      </Tabs>
 
-        {pendingTasks.length > 0 ? (
-          <Grid container spacing={2}>
-            {pendingTasks.map((task) => (
-              <Grid item xs={12} sm={6} md={4} key={task._id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {task.title}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      {task.description}
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip
-                        icon={<Star />}
-                        label={`${task.points || task.pointsAwarded || 0} points`}
-                        color="primary"
-                        size="small"
-                      />
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<Send />}
-                        onClick={() => handleSendTask(task._id)}
-                        disabled={sendingTaskId === task._id}
-                        color="primary"
-                      >
-                        {sendingTaskId === task._id
-                          ? "Sending..."
-                          : "Send Task"}
-                      </Button>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Alert severity="success">
-            Great! All tasks have been sent. Check back later for more tasks!
-          </Alert>
-        )}
-      </Box>
-
-      {/* Sent Tasks */}
-      {sentTasks.length > 0 && (
-        <>
-          <Divider sx={{ my: 3 }} />
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>
-              <Notifications sx={{ mr: 1 }} />
-              Sent Tasks ({sentTasks.length})
-            </Typography>
-            <Grid container spacing={2}>
-              {sentTasks.map((task) => (
-                <Grid item xs={12} sm={6} md={4} key={task._id}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        {task.title}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 2 }}
-                      >
-                        {task.description}
-                      </Typography>
-                      <Chip
-                        icon={<Star />}
-                        label={`${task.points || task.pointsAwarded || 0} points`}
-                        color="info"
-                        size="small"
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        </>
-      )}
-
-      {/* Completed Tasks */}
-      <Divider sx={{ my: 3 }} />
-      <Box>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          <Celebration sx={{ mr: 1 }} />
-          Completed Tasks ({completedTasks.length})
-        </Typography>
-
-        {completedTasks.length > 0 ? (
-          <Grid container spacing={2}>
-            {completedTasks.map((task) => (
-              <Grid item xs={12} sm={6} md={4} key={task._id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {task.title}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      {task.description}
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      sx={{ mb: 1 }}
-                    >
-                      <Chip
-                        icon={<Star />}
-                        label={`${task.points || task.pointsAwarded || 0} points`}
-                        color={
-                          task.status === "approved" ? "success" : "warning"
-                        }
-                        size="small"
-                      />
-                    </Stack>
-                    {task.completedAt && (
-                      <Typography variant="caption" color="text.secondary">
-                        Completed on:{" "}
-                        {new Date(task.completedAt).toLocaleDateString()}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Alert severity="info">No completed tasks yet.</Alert>
-        )}
-      </Box>
+      <TabPanel value={activeTab} index={0}>
+        {renderTasks(pendingTasks, true, false)}
+      </TabPanel>
+      <TabPanel value={activeTab} index={1}>
+        {renderTasks(pendingApprovalTasks, false, false)}
+      </TabPanel>
+      <TabPanel value={activeTab} index={2}>
+        {renderTasks(approvedTasks, false, false)}
+      </TabPanel>
+      <TabPanel value={activeTab} index={3}>
+        {renderTasks(rejectedTasks, false, false)}
+      </TabPanel>
+      <TabPanel value={activeTab} index={4}>
+        {renderTasks(sentTasks, false, false)}
+      </TabPanel>
+      <TabPanel value={activeTab} index={5}>
+        {renderTasks(completedTasks, false, true)}
+      </TabPanel>
     </Container>
   );
 };

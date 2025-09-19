@@ -37,7 +37,7 @@ function App() {
       pendingApprovals={pendingApprovals} 
       isParent={false}
     >
-      <ChildDashboard 
+      <ChildDashboard
         key={activeTab}
         activeTab={activeTab} 
         setActiveTab={setActiveTab}

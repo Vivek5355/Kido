@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,7 +9,7 @@ import {
   Stack,
   Alert,
 } from "@mui/material";
-import { API } from "../api/axiosInstance"; 
+import { API } from "../api/axiosInstance";
 
 const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
   const [formData, setFormData] = useState({
@@ -25,7 +25,6 @@ const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
       [e.target.name]: e.target.value,
     });
   };
-
   const handleSubmit = async () => {
     if (!formData.rewardName.trim() || !formData.points) {
       setError("Please fill in all fields");
@@ -39,11 +38,15 @@ const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
       setError("");
       setLoading(true);
 
-      const response = await API.post("/rewards", {
+      const payload = {
         rewardName: formData.rewardName,
         points: Number(formData.points),
-        parentId: parentId
-      });
+        parentId: parentId,
+      };
+
+      console.log("payload :: ",payload);
+      
+      const response = await API.post("/rewards", payload);
 
       console.log("Reward created:", response.data);
 
@@ -52,7 +55,7 @@ const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
       setFormData({ rewardName: "", points: "" });
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error("error in add reward :: ", err.response);
       setError(
         err.response?.data?.message || "Failed to create reward. Try again."
       );

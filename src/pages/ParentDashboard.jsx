@@ -70,16 +70,6 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     message: '',
     severity: 'success',
   });
-
-  const statusColorMap = {
-    pending: 'warning',
-    'pending-approval': 'warning',
-    approved: 'success',
-    rejected: 'error',
-    sent: 'info',
-    complete: 'default',
-  };
-
   // Initial data fetch
   useEffect(() => {
     if (user?.user?.user?._id) {
@@ -90,7 +80,6 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     }
   }, [user?.user?.user?._id]);
 
-  // Update stats
   useEffect(() => {
     const totalPoints = children.reduce((sum, child) => sum + (child.totalPoints || 0), 0);
     setStats({
@@ -101,20 +90,15 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       totalRewards: rewards.length,
     });
 
-  console.log("--------",user.user.user._id)
-
-
     const pendingTasks = tasks.filter(t => t.status === 'pending-approval').length;
     const pendingWishes = wishes.filter(w => w.status === 'pending-approval').length;
     setPendingApprovals(pendingTasks + pendingWishes);
   }, [children, tasks, wishes, rewards, setPendingApprovals]);
 
-  // Reset task page when child filter changes
   useEffect(() => {
     setTaskPage(1);
   }, [selectedChildId]);
 
-  // Filter pending tasks for tab 1
   useEffect(() => {
     if (activeTab === 1) {
       const pendingTasks = tasks.filter(task => 
@@ -124,7 +108,6 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   }, [activeTab, tasks]);
   
 
-  // Fetch rewards when activeTab 3 is clicked
   useEffect(() => {
     if (activeTab === 3) {
       fetchRewards();
@@ -134,13 +117,13 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   const showToast = (message, severity = 'success') => {
     setToast({ open: true, message, severity });
   };
-  console.log("children",children)
   const handleCloseToast = () => {
     setToast({ ...toast, open: false });
   };
 
   const fetchChildren = async () => {
     try {
+
       const response = await API.get('/children');
       const data = response.data
       console.log("dffdd------",data)
@@ -163,6 +146,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       showToast('Error fetching tasks', 'error');
     }
   };
+
 
   const fetchWishes = async () => {
     if (!user?.user?.user?._id) return;
@@ -192,7 +176,6 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       
       console.log('Rewards API Response:', response.data);
       setRewards(Array.isArray(response.data) ? response.data : []);
-      showToast('Rewards loaded successfully!', 'success');
     } catch (err) {
       console.error('Error fetching rewards:', err);
       setRewards([]);
@@ -207,7 +190,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
-      setRewards(prev => prev.filter(reward => reward.id !== id));
+      setRewards(prev => prev.filter(reward => reward._id !== id));
       showToast('Reward deleted successfully!', 'error');
     } catch (err) {
       showToast('Error deleting reward', 'error');
@@ -607,7 +590,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
                         </Box>
                         <IconButton
                           size="small"
-                          onClick={() => handleDeleteReward(reward.id)}
+                          onClick={() => handleDeleteReward(reward._id)}
                           color="error"
                         >
                           <Delete />
@@ -629,7 +612,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
               setOpenRewardForm(false);
               fetchRewards();
             }}
-            parentId={user?.user?.user?.id}
+            parentId={user?.user?.user?._id}
           />
         </Box>
       )}

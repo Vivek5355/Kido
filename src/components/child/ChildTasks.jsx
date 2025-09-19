@@ -23,8 +23,10 @@ import {
 } from "@mui/icons-material";
 import Confetti from "react-confetti";
 import { API } from "../api/axiosInstance";
+import { useToast } from "../common/Toast";
 
 const ChildTasks = ({ childId }) => {
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -247,9 +249,11 @@ const ChildTasks = ({ childId }) => {
         sentTasks: prev.sentTasks + 1,
       }));
       setShowConfetti(true);
+      showToast("Task sent successfully!", "success");
     } catch (err) {
       console.error("Error sending task:", err);
       setError("Failed to send task");
+      showToast("Failed to send task. Please try again.", "error");
     } finally {
       setSendingTaskId(null);
     }

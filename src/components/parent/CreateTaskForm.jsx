@@ -45,10 +45,9 @@ const CreateTaskForm = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === "childId") {
-      AddTaskDialog;
       const selectedChild = childrenList.find((child) => child._id === value);
       console.log(
-        "ðŸ‘¶ Selected Child:",
+        "Selected Child:",
         selectedChild?.name || "Unknown Child"
       );
     }

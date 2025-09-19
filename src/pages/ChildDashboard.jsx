@@ -16,6 +16,7 @@ import {
   CircularProgress,
   Chip,
   Stack,
+  Snackbar,
 } from "@mui/material";
 import {
   Star,
@@ -43,7 +44,8 @@ export const ChildDashboard = ({ activeTab }) => {
   const [completedTasks, setCompletedTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState("");
-  const [rewards, setRewards] = useState([]); // ✅ NEW state for rewards
+  const [rewards, setRewards] = useState([]);
+  const [successMessage, setSuccessMessage] = useState("");
 
   let localChild = {};
   try {
@@ -52,7 +54,6 @@ export const ChildDashboard = ({ activeTab }) => {
     localChild = {};
   }
 
-  // ✅ Fetch Wishes
   const fetchWishes = async () => {
     if (!user?.user?.user?._id) {
       setError("User ID not found. Please try logging in again.");
@@ -101,7 +102,6 @@ export const ChildDashboard = ({ activeTab }) => {
     }
   };
 
-  // ✅ Fetch Completed Tasks
   const fetchCompletedTasks = async () => {
     if (!user?.user?.user?._id) {
       setTasksError("User ID not found. Please try logging in again.");
@@ -150,6 +150,7 @@ export const ChildDashboard = ({ activeTab }) => {
       setTasksLoading(false);
     }
   };
+
   const fetchRewards = async () => {
     if (!user?.user?.user?._id) {
       console.error("User ID not found. Cannot fetch rewards.");
@@ -162,8 +163,8 @@ export const ChildDashboard = ({ activeTab }) => {
           "Content-Type": "application/json",
         },
       });
-      console.log("Rewards API Response:", response.data); // ✅ LOG response
-      setRewards(response.data); // store rewards in state
+      console.log("Rewards API Response:", response.data);
+      setRewards(response.data.filter(reward => reward.status !== "redeemed"));
     } catch (error) {
       console.error("Error fetching rewards:", error);
     }
@@ -191,7 +192,7 @@ export const ChildDashboard = ({ activeTab }) => {
     }
 
     if (currentTab === 3 && user?.user?.user?._id) {
-      fetchRewards(); // ✅ CALL when on Rewards tab
+      fetchRewards();
     }
   }, [currentTab, user?.user?.user?._id]);
 
@@ -216,6 +217,7 @@ export const ChildDashboard = ({ activeTab }) => {
       setError("User ID not found. Please try logging in again.");
     }
   };
+
   const handleTasksRetry = () => {
     if (user?.user?.user?._id) {
       fetchCompletedTasks();
@@ -225,28 +227,27 @@ export const ChildDashboard = ({ activeTab }) => {
   };
 
   const handleRedeemReward = async (rewardId) => {
-  try {
-    const response = await API.post(
-      `/rewards/redeem/${rewardId}`,
-      { childId: user?.user?.user?._id },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log("Redeem Response:", response.data);
+    try {
+      const response = await API.patch(
+        `/rewards/${rewardId}`,
+        { status: "redeemed" },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Redeem Response:", response.data);
 
-    alert("Reward redeemed successfully!");
-    fetchRewards();
+      setSuccessMessage("Reward redeemed successfully!");
+      fetchRewards();
 
-  } catch (error) {
-    console.error("Error redeeming reward:", error);
-    alert("Failed to redeem reward. Please try again.");
-  }
-};
-
+    } catch (error) {
+      console.error("Error redeeming reward:", error);
+      alert("Failed to redeem reward. Please try again.");
+    }
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -446,7 +447,6 @@ export const ChildDashboard = ({ activeTab }) => {
                 </Grid>
               ))}
 
-              {/* Summary Card */}
               <Grid item xs={12}>
                 <Paper
                   sx={{
@@ -549,6 +549,17 @@ export const ChildDashboard = ({ activeTab }) => {
           />
         </DialogContent>
       </Dialog>
+
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={800}
+        onClose={() => setSuccessMessage("")}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSuccessMessage("")} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

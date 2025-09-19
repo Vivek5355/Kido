@@ -77,69 +77,69 @@ const Layout = ({
     navigate("/");
   };
   return (
-    <Box>
-      <AppBar position="static" sx={{ backgroundColor: "#6366f1" }}>
-        <Toolbar>
-          {/* Logo / Title */}
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            🌟 Kiddo Rewards
-          </Typography>
+      <Box>
+        <AppBar position="static" sx={{ backgroundColor: "#6366f1" }}>
+          <Toolbar>
+            {/* Logo / Title */}
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              🌟 Kiddo Rewards
+            </Typography>
 
-          {/* Tabs */}
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            textColor="inherit"
-            TabIndicatorProps={{ style: { backgroundColor: "#fff" } }}
-            sx={{
-              "& .MuiTab-root": {
-                color: "rgba(255,255,255,0.7)",
-                fontWeight: "bold",
-                "&.Mui-selected": { color: "#fff" },
-              },
-            }}
-          >
-            {currentTabs.map((tab, i) => (
-              <Tab
-                key={i}
-                label={tab.label}
-                value={tab.value}
-                sx={
-                  tab.value === 3 && pendingApprovals > 0
-                    ? { color: "#ffeb3b", fontWeight: "bold" }
-                    : {}
-                }
-              />
-            ))}
-          </Tabs>
-
-          {/* Role Chip */}
-          <Stack direction="row" spacing={4} alignItems="center" sx={{ mr: 5 }}>
-            <Chip
-              label={isParent ? "Parent" : "Child"}
-              variant="outlined"
-              size="small"
+            {/* Tabs */}
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              textColor="inherit"
+              TabIndicatorProps={{ style: { backgroundColor: "#fff" } }}
               sx={{
-                color: "white",
-                borderColor: "rgba(239, 177, 177, 0.5)",
-                "& .MuiChip-icon": { color: "white" },
-                fontWeight: "bold",
+                "& .MuiTab-root": {
+                  color: "rgba(255,255,255,0.7)",
+                  fontWeight: "bold",
+                  "&.Mui-selected": { color: "#fff" },
+                },
               }}
-            />
-          </Stack>
+            >
+              {currentTabs.map((tab, i) => (
+                <Tab
+                  key={i}
+                  label={tab.label}
+                  value={tab.value}
+                  sx={
+                    tab.value === 3 && pendingApprovals > 0
+                      ? { color: "#ffeb3b", fontWeight: "bold" }
+                      : {}
+                  }
+                />
+              ))}
+            </Tabs>
 
-          {/* Logout Icon */}
-          <Tooltip title="Log out">
-            <IconButton onClick={handleLogout} color="inherit">
-              <Logout />
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
-      </AppBar>
+            {/* Role Chip */}
+            <Stack direction="row" spacing={4} alignItems="center" sx={{ mr: 5 }}>
+              <Chip
+                label={isParent ? "Parent" : "Child"}
+                variant="outlined"
+                size="small"
+                sx={{
+                  color: "white",
+                  borderColor: "rgba(239, 177, 177, 0.5)",
+                  "& .MuiChip-icon": { color: "white" },
+                  fontWeight: "bold",
+                }}
+              />
+            </Stack>
 
-      {/* Main Content */}
-      <Box component="main">{children}</Box>
-    </Box>
+            {/* Logout Icon */}
+            <Tooltip title="Log out">
+              <IconButton onClick={handleLogout} color="inherit">
+                <Logout />
+              </IconButton>
+            </Tooltip>
+          </Toolbar>
+        </AppBar>
+
+        {/* Main Content */}
+        <Box component="main">{children}</Box>
+      </Box>
   );
 };
 

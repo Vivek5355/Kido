@@ -80,12 +80,9 @@ const Layout = ({
       <Box>
         <AppBar position="static" sx={{ backgroundColor: "#6366f1" }}>
           <Toolbar>
-            {/* Logo / Title */}
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               🌟 Kiddo Rewards
             </Typography>
-
-            {/* Tabs */}
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
@@ -112,8 +109,6 @@ const Layout = ({
                 />
               ))}
             </Tabs>
-
-            {/* Role Chip */}
             <Stack direction="row" spacing={4} alignItems="center" sx={{ mr: 5 }}>
               <Chip
                 label={isParent ? "Parent" : "Child"}
@@ -127,8 +122,6 @@ const Layout = ({
                 }}
               />
             </Stack>
-
-            {/* Logout Icon */}
             <Tooltip title="Log out">
               <IconButton onClick={handleLogout} color="inherit">
                 <Logout />
@@ -136,8 +129,6 @@ const Layout = ({
             </Tooltip>
           </Toolbar>
         </AppBar>
-
-        {/* Main Content */}
         <Box component="main">{children}</Box>
       </Box>
   );

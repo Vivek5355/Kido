@@ -15,7 +15,6 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API } from "../components/api/axiosInstance";
@@ -60,7 +59,6 @@ const Login = () => {
       });
 
       const userData = response.data;
-      console.log("Login response:", userData);
 
       // Store user data in localStorage for components to access
       if (userData.user) {

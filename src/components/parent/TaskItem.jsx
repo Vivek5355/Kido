@@ -101,7 +101,6 @@ const TaskItem = ({ task, children, onEdit, onDelete, readOnly = false }) => {
           <Typography variant="h6" component="div">
             {task.title}
           </Typography>
-          <Chip {...statusConfig} size="small" icon={statusConfig.icon} />
         </Box>
 
         {!readOnly && (

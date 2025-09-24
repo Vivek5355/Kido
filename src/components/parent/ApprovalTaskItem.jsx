@@ -69,6 +69,7 @@ const ApprovalTaskItem = ({ task, children, onApprove, onReject }) => {
   const statusConfig = getStatusConfig(task.status);
 
   const handleApprove = () => {
+    console.log('Task object:', task);
     onApprove(task._id);
   };
 
@@ -99,8 +100,7 @@ const ApprovalTaskItem = ({ task, children, onApprove, onReject }) => {
               />
             </Box>
 
-            {/* Approve/Reject Buttons for Sent Tasks */}
-            {(task.status === "sent" || task.status === "pending_approval") && (
+            {(task.status === "sent" || task.status === "pending_approval" || task.status === "pending-approval") && (
               <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                 <Button
                   variant="contained"

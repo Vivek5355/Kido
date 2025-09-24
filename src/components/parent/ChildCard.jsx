@@ -15,30 +15,22 @@ import { MoreVert, Edit, Delete, TrendingUp } from "@mui/icons-material";
 
 const ChildCard = ({ child, onEdit, onDelete }) => {
   const [anchorEl, setAnchorEl] = useState(null);
-
-  const availablePoints =
-    (child?.totalPoints || 0) - (child?.redeemedPoints || 0);
-
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-
   const handleEdit = () => {
     onEdit(child);
     handleMenuClose();
   };
-
   const handleDelete = async () => {
-    console.log("handleDelete:::::",child._id)
+    // console.log.log("handleDelete:::::",child._id)
     const confirmed = window.confirm(
       `Are you sure you want to delete ${child.name}'s profile?`
     );
     if (confirmed) {
-
       await onDelete(child._id);
     }
     handleMenuClose();
@@ -71,18 +63,11 @@ const ChildCard = ({ child, onEdit, onDelete }) => {
           }
           subheader={`Age: ${child?.age} years`}
         />
-
         <CardContent sx={{ flexGrow: 1 }}>
           <Stack spacing={2}>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Chip
-                label={`${availablePoints} points`}
-                color="primary"
-                size="small"
-                icon={<TrendingUp />}
-              />
-              <Chip
-                label={`${child?.totalPoints || 0} earned`}
+                label={`${child?.points || 0} points`}
                 color="success"
                 size="small"
               />
@@ -90,7 +75,6 @@ const ChildCard = ({ child, onEdit, onDelete }) => {
           </Stack>
         </CardContent>
       </Card>
-
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}

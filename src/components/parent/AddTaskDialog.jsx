@@ -299,8 +299,8 @@ const AddTaskDialog = ({
                     <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
                       {child.name.charAt(0)}
                     </Avatar>
-                    {child.name} (Level{" "}
-                    {Math.floor((child.totalPoints || 0) / 50) + 1})
+                    {child.name} 
+                   
                   </Box>
                 </MenuItem>
               ))}

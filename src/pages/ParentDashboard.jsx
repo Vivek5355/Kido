@@ -17,6 +17,8 @@ import {
   Chip,
   IconButton,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import {
   Add,
@@ -56,8 +58,9 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   // Editing states
   const [editingChild, setEditingChild] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
-  // const [editingWish, setEditingWish] = useState(null);
   const [selectedChildId, setSelectedChildId] = useState("");
+
+  const [showAllRewards, setShowAllRewards] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -267,7 +270,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     try {
       const token = localStorage.getItem("token");
       const response = await API.get(
-        `/rewards/${user?.user?._id || user?.user?.user?._id}`,
+        `/rewards/${user?.user?._id || user?.user?.user?._id}?status=all`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -275,6 +278,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
           },
         }
       );
+      console.log("rewards fetched :: ", response.data);
       setRewards(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       setRewards([]);
@@ -283,6 +287,16 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       setLoadingStates(prev => ({ ...prev, rewards: false }));
     }
   };
+
+  // Helper function to get child name by ID
+  const getChildNameById = (childId) => {
+    const child = children.find(child => child.id === childId || child._id === childId);
+    return child ? child.name : 'Unknown Child';
+  };
+
+  const filteredRewards = showAllRewards 
+    ? rewards 
+    : rewards.filter(reward => reward.status === 'pending');
 
   const handleDeleteReward = async (id) => {
     setLoadingStates(prev => ({ ...prev, deleting: true }));
@@ -294,7 +308,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       });
       setRewards((prev) => prev.filter((reward) => reward._id !== id));
       showToast("Reward deleted successfully!", "error");
-      publishSync("rewards", "rewards");
+      // publishSync("rewards", "rewards");
     } catch (err) {
       showToast("Error deleting reward", "error");
     } finally {
@@ -305,7 +319,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   const handleAddChild = (c) => {
     setChildren((prev) => [...prev, c]);
     showToast("Child added successfully!", "success");
-    publishSync("children", "children");
+    // publishSync("children", "children");
   };
 
   const handleUpdateChild = (updated) => {
@@ -755,48 +769,109 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-              Rewards ({rewards.length})
+              Rewards ({filteredRewards.length})
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Add />}
-              onClick={() => setOpenRewardForm(true)}
-              disabled={loadingStates.rewards}
-            >
-              {loadingStates.rewards ? "Loading..." : "Add Reward"}
-            </Button>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showAllRewards}
+                    onChange={(e) => setShowAllRewards(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Show All Rewards"
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Add />}
+                onClick={() => setOpenRewardForm(true)}
+                disabled={loadingStates.rewards}
+              >
+                {loadingStates.rewards ? "Loading..." : "Add Reward"}
+              </Button>
+            </Stack>
           </Box>
 
           {rewards.length === 0 ? (
             <Alert severity="info">No rewards created yet.</Alert>
+          ) : filteredRewards.length === 0 ? (
+            <Alert severity="info">
+              {showAllRewards 
+                ? "No rewards found." 
+                : "No pending rewards available."}
+            </Alert>
           ) : (
             <Grid container spacing={2}>
-              {rewards.map((reward) => (
-                <Grid item xs={12} sm={6} md={4} key={reward.id}>
-                  <Card>
+              {filteredRewards.map((reward) => (
+                <Grid item xs={12} sm={6} md={4} key={reward._id || reward.id}>
+                  <Card sx={{ 
+                    opacity: reward.status !== 'pending' ? 0.7 : 1,
+                    border: reward.status !== 'pending' ? '1px dashed #ccc' : '1px solid rgba(0,0,0,0.12)',
+                    background: reward.status !== 'pending' ? '#f5f5f5' : 'white'
+                  }}>
                     <CardContent>
                       <Box
                         display="flex"
                         justifyContent="space-between"
                         alignItems="flex-start"
                       >
-                        <Box>
-                          <Typography variant="h6" gutterBottom>
-                            {reward.rewardName}
-                          </Typography>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Box display="flex" alignItems="center" gap={1} mb={1}>
+                            <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+                              {reward.rewardName}
+                            </Typography>
+                            {reward.status !== 'pending' && (
+                              <Chip 
+                                label={reward.status === 'redeemed' ? "Redeemed" : reward.status} 
+                                size="small" 
+                                color="default"
+                                variant="filled"
+                              />
+                            )}
+                            {reward.status === 'pending' && (
+                              <Chip 
+                                label="Available" 
+                                size="small" 
+                                color="primary"
+                                variant="outlined"
+                              />
+                            )}
+                          </Box>
+                          
                           <Chip
                             label={`${reward.points} points`}
                             color="primary"
                             variant="outlined"
                             size="small"
+                            sx={{ mb: 1 }}
                           />
+                          
+                          {/* Display child name for redeemed rewards */}
+                          {reward.status === 'redeemed' && (
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Redeemed by: {getChildNameById(reward.redeemedBy || reward.childId)}
+                              </Typography>
+                              {reward.redeemedAt && (
+                                <Typography variant="body2" color="text.secondary">
+                                  Date: {new Date(reward.redeemedAt).toLocaleDateString()}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
                         </Box>
+                        
                         <IconButton
                           size="small"
-                          onClick={() => handleDeleteReward(reward._id)}
+                          onClick={() => handleDeleteReward(reward._id || reward.id)}
                           color="error"
-                          disabled={loadingStates.deleting}
+                          disabled={loadingStates.deleting || reward.status !== 'pending'}
+                          sx={{ 
+                            opacity: reward.status !== 'pending' ? 0.5 : 1 
+                          }}
+                          title={reward.status !== 'pending' ? "Cannot delete non-pending reward" : "Delete reward"}
                         >
                           {loadingStates.deleting ? <CircularProgress size={16} /> : <Delete />}
                         </IconButton>
@@ -815,7 +890,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
               showToast("Reward created successfully!");
               setOpenRewardForm(false);
               fetchRewards();
-              publishSync("rewards", "rewards");
+              // publishSync("rewards", "rewards");
             }}
             parentId={
               user?.user?._id || user?.user?._id || user?.user?.user?._id

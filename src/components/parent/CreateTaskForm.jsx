@@ -59,8 +59,9 @@ const CreateTaskForm = ({
       if (onTaskCreated) onTaskCreated(response.data);
       onClose();
     } catch (error) {
-      console.error("âŒ Task creation failed:", error.response?.data || error);
+      // console.error("âŒ Task creation failed:", error.response?.data || error);
       alert(error.response?.data?.message || "Task creation failed");
+      navigate("/tasks");
     }
   };
 

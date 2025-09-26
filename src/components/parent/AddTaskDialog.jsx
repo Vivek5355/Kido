@@ -15,6 +15,7 @@ import {
   Box,
   Avatar,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import { Assignment, Edit } from "@mui/icons-material";
 import dayjs from "dayjs";
@@ -75,6 +76,7 @@ const AddTaskDialog = ({
   initialChildId = null,
 }) => {
   const isEditMode = !!editTask;
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     points: 10,
@@ -170,6 +172,7 @@ const AddTaskDialog = ({
       return;
     }
     try {
+      setSubmitting(true);
       if (isEditMode) {
         if (editTask.status === "complete") {
           alert("Completed tasks cannot be edited.");
@@ -228,6 +231,8 @@ const AddTaskDialog = ({
         error.response?.data || error.message
       );
       alert(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -333,9 +338,16 @@ const AddTaskDialog = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!formData.title.trim() || !formData.childId}
+          disabled={submitting || !formData.title.trim() || !formData.childId}
         >
-          {isEditMode ? "Update Task" : "Create Task"}
+          {submitting ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <CircularProgress color="inherit" size={18} thickness={5} />
+              {isEditMode ? "Updating..." : "Creating..."}
+            </Box>
+          ) : (
+            isEditMode ? "Update Task" : "Create Task"
+          )}
         </Button>
       </DialogActions>
     </Dialog>

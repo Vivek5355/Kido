@@ -330,6 +330,7 @@ export const ChildDashboard = ({ activeTab }) => {
 
         {currentTab === 0 && (
           <ChildTasks
+            
             childId={user?.user?.user?._id}
             totalPoint={user?.user?.points || user?.user?.user?.points}
           />

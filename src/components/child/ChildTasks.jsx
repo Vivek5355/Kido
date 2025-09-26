@@ -29,7 +29,6 @@ const ChildTasks = ({ childId, totalPoint }) => {
   const [sendingTaskId, setSendingTaskId] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,
     "Content-Type": "application/json",
@@ -46,7 +45,7 @@ const ChildTasks = ({ childId, totalPoint }) => {
       const response = await API.get(`/tasks/child/${childId}`, {
         headers: getAuthHeaders(),
       });
-      
+      // console.log("Fetched Tasks Response:", response.data);
       if (Array.isArray(response.data)) {
         setTasks(response.data);
       } else {
@@ -60,7 +59,6 @@ const ChildTasks = ({ childId, totalPoint }) => {
       setLoading(false);
     }
   };
-
   const handleApiError = (err, operation) => {
     console.error(`Error ${operation}:`, err);
     if (err.response) {
@@ -92,10 +90,6 @@ const ChildTasks = ({ childId, totalPoint }) => {
     () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "approved"),
     [tasks]
   );
-  const rejectedTasks = useMemo(
-    () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "rejected"),
-    [tasks]
-  );
   const sentTasks = useMemo(
     () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "sent"),
     [tasks]
@@ -112,12 +106,12 @@ const ChildTasks = ({ childId, totalPoint }) => {
       {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
-  const handleSendTask = async (taskId) => {
+  const handleSendTask = async (taskId,type) => {
     try {
       setSendingTaskId(taskId);
       await API.put(
         `/tasks/status/${taskId}`,
-        { type: 2, status: "sent" },
+        { type:type, status: "sent" },
         {
           headers: getAuthHeaders(),
         }
@@ -129,7 +123,6 @@ const ChildTasks = ({ childId, totalPoint }) => {
             : task
         )
       );
-      childPublishSync('tasks', 'tasks');
       setShowConfetti(true);
       setSnackbar({
         open: true,
@@ -147,8 +140,10 @@ const ChildTasks = ({ childId, totalPoint }) => {
       setSendingTaskId(null);
     }
   };
+
   const renderTasks = (taskList, showSendButton = false, showCompletedAt = false) => (
-    taskList.length > 0 ? (
+    taskList.length > 0 ? ( 
+      
       <Grid container spacing={2}>
         {taskList.map((task) => (
           <Grid item xs={12} sm={6} md={4} key={task._id}>
@@ -172,7 +167,7 @@ const ChildTasks = ({ childId, totalPoint }) => {
                       variant="contained"
                       size="small"
                       startIcon={<Send sx={{ fontSize: 16 }} />}
-                      onClick={() => handleSendTask(task._id)}
+                      onClick={() => handleSendTask(task._id, task?.wishTaskStatus ? 2 : 1)}
                       disabled={sendingTaskId === task._id}
                       color="primary"
                       sx={{

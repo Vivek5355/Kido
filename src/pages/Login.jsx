@@ -10,11 +10,15 @@ import {
   Alert,
   Stack,
   Divider,
+  InputAdornment,
+  IconButton,
   FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API } from "../components/api/axiosInstance";
@@ -34,6 +38,7 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (field) => (event) => {
     setFormData((prev) => ({
@@ -109,18 +114,6 @@ const Login = () => {
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <Stack spacing={2}>
-              <FormControl fullWidth>
-                <InputLabel>I am a</InputLabel>
-                <Select
-                  value={formData.role}
-                  label="I am a"
-                  onChange={handleChange("role")}
-                >
-                  <MenuItem value={ROLES.PARENT}>Parent</MenuItem>
-                  <MenuItem value={ROLES.CHILD}>Child</MenuItem>
-                </Select>
-              </FormControl>
-
               <TextField
                 required
                 fullWidth
@@ -137,12 +130,46 @@ const Login = () => {
                 fullWidth
                 name="password"
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="password"
                 autoComplete="current-password"
                 value={formData.password}
                 onChange={handleChange("password")}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
+
+              <FormControl component="fieldset">
+                <FormLabel component="legend">I am a</FormLabel>
+                <RadioGroup
+                  row
+                  value={formData.role}
+                  onChange={handleChange("role")}
+                  sx={{ justifyContent: "center", mt: 1 }}
+                >
+                  <FormControlLabel
+                    value={ROLES.PARENT}
+                    control={<Radio />}
+                    label="Parent"
+                  />
+                  <FormControlLabel
+                    value={ROLES.CHILD}
+                    control={<Radio />}
+                    label="Child"
+                  />
+                </RadioGroup>
+              </FormControl>
 
               <Button
                 type="submit"

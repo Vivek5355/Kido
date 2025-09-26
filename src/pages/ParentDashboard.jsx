@@ -204,6 +204,15 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   }, [activeTab, tasks]);
 
   useEffect(() => {
+    if (activeTab === 0) {
+      fetchChildren();
+    }
+    if (activeTab === 1 || activeTab === 4) {
+      fetchTasks();
+    }
+    if (activeTab === 2) {
+      fetchWishes();
+    }
     if (activeTab === 3) {
       fetchRewards();
     }
@@ -286,12 +295,6 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     } finally {
       setLoadingStates(prev => ({ ...prev, rewards: false }));
     }
-  };
-
-  // Helper function to get child name by ID
-  const getChildNameById = (childId) => {
-    const child = children.find(child => child.id === childId || child._id === childId);
-    return child ? child.name : 'Unknown Child';
   };
 
   const filteredRewards = showAllRewards 
@@ -480,6 +483,8 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   ).length;
   const pendingWishCount = wishes.filter((w) => w.status === "pending-approval").length;
   const totalPending = pendingTaskCount + pendingWishCount;
+
+  console.log("",)
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -848,18 +853,16 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
                             sx={{ mb: 1 }}
                           />
                           
-                          {/* Display child name for redeemed rewards */}
-                          {reward.status === 'redeemed' && (
-                            <Box sx={{ mt: 1 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Redeemed by: {getChildNameById(reward.redeemedBy || reward.childId)}
-                              </Typography>
-                              {reward.redeemedAt && (
-                                <Typography variant="body2" color="text.secondary">
-                                  Date: {new Date(reward.redeemedAt).toLocaleDateString()}
-                                </Typography>
-                              )}
-                            </Box>
+                          {reward.status === 'redeemed' && reward.redeemedBy && (
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                              Redeemed by: {reward.redeemedBy.name || 'Child'}
+                            </Typography>
+                          )}
+                          
+                          {reward.status === 'redeemed' && reward.redeemedAt && (
+                            <Typography variant="body2" color="text.secondary">
+                              Date: {new Date(reward.redeemedAt).toLocaleDateString()}
+                            </Typography>
                           )}
                         </Box>
                         

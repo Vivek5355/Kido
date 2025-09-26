@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import {
   Dialog,
   DialogTitle,
@@ -19,6 +22,11 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
     age: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
+  };
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
 
@@ -133,11 +141,25 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
             <TextField
               label="Password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
               fullWidth
               required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleClickShowPassword}
+                      onMouseDown={handleMouseDownPassword}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
           )}
         </Stack>

@@ -39,18 +39,17 @@ const CreateTaskForm = ({
       });
     }
   }, [wish, open]);
-  console.log("form data in wish ====>", formData);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (name === "childId") {
-      const selectedChild = childrenList.find((child) => child._id === value);
-      console.log(
-        "Selected Child:",
-        selectedChild?.name || "Unknown Child"
-      );
-    }
+    // if (name === "childId") {
+    //   const selectedChild = childrenList.find((child) => child._id === value);
+    //   // console.log(
+    //   //   "Selected Child:",
+    //   //   selectedChild?.name || "Unknown Child"
+    //   // );
+    // }
   };
 
   const handleSubmit = async () => {

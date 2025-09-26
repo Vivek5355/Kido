@@ -10,7 +10,6 @@ import {
   Alert,
 } from "@mui/material";
 import { API } from "../api/axiosInstance";
-
 const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
   const [formData, setFormData] = useState({
     rewardName: "",
@@ -18,7 +17,6 @@ const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -37,21 +35,13 @@ const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
     try {
       setError("");
       setLoading(true);
-
       const payload = {
         rewardName: formData.rewardName,
         points: Number(formData.points),
         parentId: parentId,
       };
-
-      console.log("payload :: ",payload);
-      
       const response = await API.post("/rewards", payload);
-
-      console.log("Reward created:", response.data);
-
       if (onSubmit) onSubmit(response.data);
-
       setFormData({ rewardName: "", points: "" });
       onClose();
     } catch (err) {
@@ -63,7 +53,6 @@ const RewardForm = ({ open, onClose, onSubmit, parentId }) => {
       setLoading(false);
     }
   };
-
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Add Reward</DialogTitle>

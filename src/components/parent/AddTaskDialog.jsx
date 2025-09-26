@@ -185,7 +185,7 @@ const AddTaskDialog = ({
           childId: formData.childId,
         };
         const res = await API.put(`/tasks/${editTask?._id}`, updateData);
-        console.log("✅ Task updated =====>", res.data);
+        //console.log("✅ Task updated =====>", res.data);
         onUpdate(res.data);
         handleClose();
       } else {
@@ -201,7 +201,7 @@ const AddTaskDialog = ({
 
         const res = await API.post("/tasks", createData);
 
-        console.log("✅ Full API Response =====>", res);
+        //console.log("✅ Full API Response =====>", res);
 
         let taskData = res.data;
 

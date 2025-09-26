@@ -16,6 +16,7 @@ import {
   CardContent,
   Chip,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add,
@@ -70,6 +71,18 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     open: false,
     message: "",
     severity: "success",
+  });
+
+  // Loading states for different operations
+  const [loadingStates, setLoadingStates] = useState({
+    children: false,
+    tasks: false,
+    wishes: false,
+    rewards: false,
+    deleting: false,
+    approving: false,
+    rejecting: false,
+    redeeming: false,
   });
 
   // Broadcast setup
@@ -183,7 +196,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
           task.status === "pending_approval" ||
           task.status === "pending"
       );
-      // console.log('pendingTasks count', pendingTasks.length)
+      // //console.log('pendingTasks count', pendingTasks.length)
     }
   }, [activeTab, tasks]);
 
@@ -201,6 +214,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   };
 
   const fetchChildren = async () => {
+    setLoadingStates(prev => ({ ...prev, children: true }));
     try {
       const response = await API.get("/children");
       const data = response.data;
@@ -208,11 +222,14 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     } catch (err) {
       setChildren([]);
       showToast("Error fetching children", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, children: false }));
     }
   };
 
   const fetchTasks = async () => {
     if (!(user?.user?._id || user?.user?.user?._id)) return;
+    setLoadingStates(prev => ({ ...prev, tasks: true }));
     try {
       const data = await API.get(
         `/tasks/parent/${user?.user?._id || user?.user?.user?._id}`
@@ -222,11 +239,14 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     } catch (err) {
       setTasks([]);
       showToast("Error fetching tasks", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, tasks: false }));
     }
   };
 
   const fetchWishes = async () => {
     if (!(user?.user?._id || user?.user?.user?._id)) return;
+    setLoadingStates(prev => ({ ...prev, wishes: true }));
     try {
       const data = await API.get(
         `/wishes/parent/${user?.user?._id || user?.user?.user?._id}`
@@ -236,11 +256,14 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     } catch (err) {
       setWishes([]);
       showToast("Error fetching wishes", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, wishes: false }));
     }
   };
 
   const fetchRewards = async () => {
     if (!(user?.user?._id || user?.user?.user?._id)) return;
+    setLoadingStates(prev => ({ ...prev, rewards: true }));
     try {
       const token = localStorage.getItem("token");
       const response = await API.get(
@@ -256,10 +279,13 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
     } catch (err) {
       setRewards([]);
       showToast("Error fetching rewards", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, rewards: false }));
     }
   };
 
   const handleDeleteReward = async (id) => {
+    setLoadingStates(prev => ({ ...prev, deleting: true }));
     try {
       await API.delete(`/rewards/${id}`, {
         headers: {
@@ -271,6 +297,8 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       publishSync("rewards", "rewards");
     } catch (err) {
       showToast("Error deleting reward", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, deleting: false }));
     }
   };
 
@@ -327,6 +355,7 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
   };
 
   const handleApproveTask = async (id) => {
+    setLoadingStates(prev => ({ ...prev, approving: true }));
     try {
       const token = localStorage.getItem("token");
       const response = await API.put(
@@ -348,10 +377,13 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       publishSync("tasks", "tasks");
     } catch (err) {
       showToast("Error approving task. Please try again.", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, approving: false }));
     }
   };
 
   const handleRejectTask = async (id, reason) => {
+    setLoadingStates(prev => ({ ...prev, rejecting: true }));
     try {
       await API.put(`/tasks/${id}`, {
         status: "rejected",
@@ -364,6 +396,8 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
       publishSync("tasks", "tasks");
     } catch (err) {
       showToast("Error rejecting task. Please try again.", "error");
+    } finally {
+      setLoadingStates(prev => ({ ...prev, rejecting: false }));
     }
   };
 
@@ -538,10 +572,10 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
                   setEditingTask(null);
                   setOpenAddTask(true);
                 }}
-                disabled={children.length === 0}
+                disabled={children.length === 0 || loadingStates.tasks}
                 sx={{ mr: 1 }}
               >
-                Add Task
+                {loadingStates.tasks ? "Loading..." : "Add Task"}
               </Button>
               <Button
                 variant="contained"
@@ -550,8 +584,9 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
                   setEditingChild(null);
                   setOpenAddChild(true);
                 }}
+                disabled={loadingStates.children}
               >
-                Add Child
+                {loadingStates.children ? "Loading..." : "Add Child"}
               </Button>
             </Stack>
           </Stack>
@@ -611,9 +646,9 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
                 setEditingTask(null);
                 setOpenAddTask(true);
               }}
-              disabled={!children.length}
+              disabled={!children.length || loadingStates.tasks}
             >
-              Add Task
+              {loadingStates.tasks ? "Loading..." : "Add Task"}
             </Button>
           </Box>
 
@@ -727,8 +762,9 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
               color="primary"
               startIcon={<Add />}
               onClick={() => setOpenRewardForm(true)}
+              disabled={loadingStates.rewards}
             >
-              Add Reward
+              {loadingStates.rewards ? "Loading..." : "Add Reward"}
             </Button>
           </Box>
 
@@ -760,8 +796,9 @@ export const ParentDashboard = ({ activeTab, setActiveTab, setPendingApprovals }
                           size="small"
                           onClick={() => handleDeleteReward(reward._id)}
                           color="error"
+                          disabled={loadingStates.deleting}
                         >
-                          <Delete />
+                          {loadingStates.deleting ? <CircularProgress size={16} /> : <Delete />}
                         </IconButton>
                       </Box>
                     </CardContent>

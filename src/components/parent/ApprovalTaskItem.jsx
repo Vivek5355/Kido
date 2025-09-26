@@ -69,7 +69,7 @@ const ApprovalTaskItem = ({ task, children, onApprove, onReject }) => {
   const statusConfig = getStatusConfig(task.status);
 
   const handleApprove = () => {
-    console.log('Task object:', task);
+    //console.log('Task object:', task);
     onApprove(task._id);
   };
 

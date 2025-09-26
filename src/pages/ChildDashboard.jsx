@@ -59,7 +59,7 @@ export const ChildDashboard = ({ activeTab }) => {
   } catch (e) {
     localChild = {};
   }
-  console.log("user", user);
+  //console.log("user", user);
 
   // Add function to fetch parent name
   const fetchParentName = async () => {
@@ -107,7 +107,7 @@ export const ChildDashboard = ({ activeTab }) => {
           "Content-Type": "application/json",
         },
       });
-      console.log("Response", response);
+      //console.log("Response", response);
       const transformedWishes = response.data.data.map((wish) => ({
         id: wish._id || wish.id,
         title: wish.title,
@@ -156,7 +156,7 @@ export const ChildDashboard = ({ activeTab }) => {
         },
       });
 
-      console.log("User", user);
+      //console.log("User", user);
 
       if (Array.isArray(response.data)) {
         const completed = response.data.filter((task) =>
@@ -202,7 +202,7 @@ export const ChildDashboard = ({ activeTab }) => {
           "Content-Type": "application/json",
         },
       });
-      console.log("Rewards API Response:", response.data);
+      //console.log("Rewards API Response:", response.data);
       setRewards(
         response.data.filter((reward) => reward.status !== "redeemed")
       );
@@ -243,7 +243,7 @@ export const ChildDashboard = ({ activeTab }) => {
 
   useEffect(() => {
     if (successMessage) {
-      console.log("successMessage set:", successMessage);
+      //console.log("successMessage set:", successMessage);
     }
   }, [successMessage]);
 
@@ -278,7 +278,7 @@ export const ChildDashboard = ({ activeTab }) => {
   };
 
   const handleRedeemReward = async (rewardId, childId) => {
-    console.log("Redeem button clicked for reward:", rewardId, "child:", childId);
+    //console.log("Redeem button clicked for reward:", rewardId, "child:", childId);
     try {
       const rewardToRedeem = rewards.find((reward) => reward._id === rewardId);
       if (!rewardToRedeem) {
@@ -286,7 +286,7 @@ export const ChildDashboard = ({ activeTab }) => {
         return;
       }
       const currentPoints = user?.user?.points || user?.user?.user?.points || 0;
-      console.log("Current points:", currentPoints, "required:", rewardToRedeem.points);
+      //console.log("Current points:", currentPoints, "required:", rewardToRedeem.points);
       if (rewardToRedeem.points > currentPoints) {
         setSuccessMessage("Insufficient points to redeem this reward!");
         return;
@@ -302,11 +302,11 @@ export const ChildDashboard = ({ activeTab }) => {
         }
       );
       const data = response.data;
-      console.log("Redeem Response:", data.remainingPoints);
+      //console.log("Redeem Response:", data.remainingPoints);
       setData(data?.remainingPoints);
       updateUserPoints(data.remainingPoints);
       setSuccessMessage("Reward redeemed successfully!");
-      console.log("Success message set: Reward redeemed successfully!");
+      //console.log("Success message set: Reward redeemed successfully!");
       fetchRewards();
     } catch (error) {
       console.error("Error redeeming reward:", error);
@@ -314,7 +314,7 @@ export const ChildDashboard = ({ activeTab }) => {
     }
   };
 
-  console.log("child total point :: ", user?.user?.user?.points);
+  //console.log("child total point :: ", user?.user?.user?.points);
   return (
     <>
       <Container maxWidth="lg" sx={{ py: 4 }}>

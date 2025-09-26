@@ -28,7 +28,7 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
         name: editChild.name || "",
         email: editChild.email || "",
         age: editChild.age || "",
-        password: "", // We do not edit password
+        password: "", 
       });
     } else {
       setFormData({ name: "", email: "", age: "", password: "" });
@@ -76,7 +76,7 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
           password: formData.password,
         }
       );
-        console.log("Response from adding child:", response.data);
+        //console.log("Response from adding child:", response.data);
         if (onAdd) {
           onAdd(response.data.child || response.data);
         }

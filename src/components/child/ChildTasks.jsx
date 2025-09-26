@@ -138,6 +138,11 @@ const ChildTasks = ({ childId, totalPoint }) => {
       });
       setTimeout(() => setShowConfetti(false), 5000);
     } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Failed to send task. Please try again.",
+        severity: "error"
+      });
     } finally {
       setSendingTaskId(null);
     }

@@ -11,7 +11,7 @@ import {
   Menu,
   MenuItem,
 } from "@mui/material";
-import { MoreVert, Edit, Delete, TrendingUp } from "@mui/icons-material";
+import { MoreVert, Edit, Delete } from "@mui/icons-material";
 
 const ChildCard = ({ child, onEdit, onDelete }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -26,7 +26,6 @@ const ChildCard = ({ child, onEdit, onDelete }) => {
     handleMenuClose();
   };
   const handleDelete = async () => {
-    // console.log.log("handleDelete:::::",child._id)
     const confirmed = window.confirm(
       `Are you sure you want to delete ${child.name}'s profile?`
     );
@@ -35,7 +34,6 @@ const ChildCard = ({ child, onEdit, onDelete }) => {
     }
     handleMenuClose();
   };
-
   return (
     <>
       <Card

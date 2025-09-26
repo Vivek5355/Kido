@@ -16,7 +16,7 @@ import {
   Avatar,
   Chip,
 } from "@mui/material";
-import { Assignment, Star, Edit } from "@mui/icons-material";
+import { Assignment, Edit } from "@mui/icons-material";
 import dayjs from "dayjs";
 import { API } from "../api/axiosInstance";
 

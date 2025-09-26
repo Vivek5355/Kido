@@ -12,10 +12,7 @@ import {
   Alert,
   CircularProgress,
   Paper,
-  Divider,
   Snackbar,
-  Tabs,
-  Tab,
 } from "@mui/material";
 import {
   Star,
@@ -33,25 +30,18 @@ const ChildTasks = ({ childId, totalPoint }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  // API configuration
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`,
     "Content-Type": "application/json",
   });
-
-  console.log("TotalPoint :::",totalPoint)
-
-  // API calls
   const fetchTasks = async () => {
     if (!childId) {
       setError("Child ID is not available. Please try logging in again.");
       setLoading(false);
       return;
     }
-
     setLoading(true);
     setError("");
-    
     try {
       const response = await API.get(`/tasks/child/${childId}`, {
         headers: getAuthHeaders(),
@@ -71,62 +61,8 @@ const ChildTasks = ({ childId, totalPoint }) => {
     }
   };
 
-  const updateTaskStatus = async (taskId, status) => {
-    try {
-      const response = await API.put(
-        `/tasks/status/${taskId}`,
-        { status },
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-      return response.data;
-    } catch (err) {
-      handleApiError(err, "updating task status");
-      throw err;
-    }
-  };
-
-  const createNewTask = async (taskData) => {
-    try {
-      const response = await API.post("/tasks", taskData, {
-        headers: getAuthHeaders(),
-      });
-      return response.data;
-    } catch (err) {
-      handleApiError(err, "creating task");
-      throw err;
-    }
-  };
-
-  const deleteTask = async (taskId) => {
-    try {
-      const response = await API.delete(`/tasks/${taskId}`, {
-        headers: getAuthHeaders(),
-      });
-      return response.data;
-    } catch (err) {
-      handleApiError(err, "deleting task");
-      throw err;
-    }
-  };
-
-  const getTaskDetails = async (taskId) => {
-    try {
-      const response = await API.get(`/tasks/${taskId}`, {
-        headers: getAuthHeaders(),
-      });
-      return response.data;
-    } catch (err) {
-      handleApiError(err, "fetching task details");
-      throw err;
-    }
-  };
-
-  // Error handling utility
   const handleApiError = (err, operation) => {
     console.error(`Error ${operation}:`, err);
-    
     if (err.response) {
       if (err.response.status === 401) {
         setError("Authentication failed. Please log in again.");
@@ -142,54 +78,40 @@ const ChildTasks = ({ childId, totalPoint }) => {
     } else {
       setError(`Failed to ${operation}. Please try again later.`);
     }
-
-    // Show snackbar for user feedback
     setSnackbar({
       open: true,
       message: `Failed to ${operation}`,
       severity: "error"
     });
   };
-
-  // Filter tasks using useMemo for better performance
   const pendingTasks = useMemo(
     () => tasks.filter((task) => task.status === "pending"),
     [tasks]
   );
-
   const approvedTasks = useMemo(
     () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "approved"),
     [tasks]
   );
-
   const rejectedTasks = useMemo(
     () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "rejected"),
     [tasks]
   );
-
   const sentTasks = useMemo(
     () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "sent"),
     [tasks]
   );
-
   const completedTasks = useMemo(
     () => tasks.filter((task) => task.status?.replace(/\s+/g, '_').toLowerCase() === "completed"),
     [tasks]
   );
-
-  // Initial data fetch
   useEffect(() => {
     fetchTasks();
   }, [childId]);
-
-  // TabPanel component
   const TabPanel = ({ children, value, index }) => (
     <div role="tabpanel" hidden={value !== index}>
       {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
-
-  // Task sending handler
   const handleSendTask = async (taskId) => {
     try {
       setSendingTaskId(taskId);
@@ -200,7 +122,6 @@ const ChildTasks = ({ childId, totalPoint }) => {
           headers: getAuthHeaders(),
         }
       );
-      // Update local state
       setTasks((prev) =>
         prev.map((task) =>
           task._id === taskId
@@ -208,6 +129,7 @@ const ChildTasks = ({ childId, totalPoint }) => {
             : task
         )
       );
+      childPublishSync('tasks', 'tasks');
       setShowConfetti(true);
       setSnackbar({
         open: true,
@@ -216,13 +138,10 @@ const ChildTasks = ({ childId, totalPoint }) => {
       });
       setTimeout(() => setShowConfetti(false), 5000);
     } catch (err) {
-      // Error is already handled in updateTaskStatus
     } finally {
       setSendingTaskId(null);
     }
   };
-
-  // Task rendering function
   const renderTasks = (taskList, showSendButton = false, showCompletedAt = false) => (
     taskList.length > 0 ? (
       <Grid container spacing={2}>
@@ -276,13 +195,9 @@ const ChildTasks = ({ childId, totalPoint }) => {
       <Alert severity="info">No tasks in this category.</Alert>
     )
   );
-
-  // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
-
-  // Loading state
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
@@ -290,8 +205,6 @@ const ChildTasks = ({ childId, totalPoint }) => {
       </Box>
     );
   }
-
-  // Error state for missing childId
   if (!childId) {
     return (
       <Alert severity="error">
@@ -303,14 +216,11 @@ const ChildTasks = ({ childId, totalPoint }) => {
   return (
     <Container>
       {showConfetti && <Confetti />}
-      
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
-
-      {/* Statistics Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={4}>
           <Paper sx={{ p: 2, textAlign: "center" }}>
@@ -331,51 +241,20 @@ const ChildTasks = ({ childId, totalPoint }) => {
         <Grid item xs={4}>
           <Paper sx={{ p: 2, textAlign: "center" }}>
             <Typography variant="h4" color="success.main">
-              {completedTasks.length + sentTasks.length + approvedTasks.length}
+              {completedTasks.length + approvedTasks.length}
             </Typography>
             <Typography variant="body2">Completed Tasks</Typography>
           </Paper>
         </Grid>
       </Grid>
-
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onChange={(e, newValue) => setActiveTab(newValue)}
-        aria-label="Task Status Tabs"
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{ mb: 3 }}
-      >
-        {/* <Tab label={`Pending (${pendingTasks.length})`} />
-        <Tab label={`Approved (${approvedTasks.length})`} />
-        <Tab label={`Rejected (${rejectedTasks.length})`} />
-        <Tab label={`Sent (${sentTasks.length})`} />
-        <Tab label={`Completed (${completedTasks.length})`} /> */}
-      </Tabs>
-
-      {/* //Tab Panels  */}
+      <h1>Pending Task</h1>
+      <hr/>
        <TabPanel value={activeTab} index={0}>
         {renderTasks(pendingTasks, true, false)}
       </TabPanel>
-      
-      <TabPanel value={activeTab} index={1}>
-        {renderTasks(approvedTasks, false, true)}
-      </TabPanel>
-      
-      <TabPanel value={activeTab} index={2}>
-        {renderTasks(rejectedTasks, false, true)}
-      </TabPanel>
-      
       <TabPanel value={activeTab} index={3}>
         {renderTasks(sentTasks, false, true)}
       </TabPanel>
-      
-      <TabPanel value={activeTab} index={4}>
-        {renderTasks(completedTasks, false, true)}
-      </TabPanel>
-
-      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={800}

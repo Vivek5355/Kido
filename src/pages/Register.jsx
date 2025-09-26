@@ -67,8 +67,9 @@ const Register = () => {
           role: "parent",
         });
         localStorage.setItem("token", res.data.token);
+        console.log("Response",res.data);
         login(res.data, "parent");
-        navigate("/dashboard");
+        navigate("/dashboard/parent");
       } catch (error) {
         setServerError(
           error.response?.data?.message ||
@@ -97,7 +98,7 @@ const Register = () => {
             </Typography>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form >
             <Stack spacing={3}>
               <TextField
                 fullWidth
@@ -140,6 +141,7 @@ const Register = () => {
                 size="large"
                 fullWidth
                 sx={{ py: 1.5 }}
+                onClick={handleSubmit}
               >
                 Create Account
               </Button>

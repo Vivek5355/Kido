@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -75,8 +74,9 @@ const AddChildDialog = ({ open, handleClose, onAdd, onUpdate, editChild }) => {
           email: formData.email,
           age: Number(formData.age),
           password: formData.password,
-        });
-
+        }
+      );
+        console.log("Response from adding child:", response.data);
         if (onAdd) {
           onAdd(response.data.child || response.data);
         }
